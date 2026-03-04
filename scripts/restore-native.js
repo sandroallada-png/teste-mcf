@@ -40,6 +40,15 @@ async function restoreOriginal() {
             console.warn('Server routes backup not found, skipping restore...');
         }
 
+        // ── 3. Restaurer next.config.ts ──
+        const nextConfigPath = path.join(__dirname, '../next.config.ts');
+        const nextConfigBackupPath = nextConfigPath + '.backup';
+        if (fs.existsSync(nextConfigBackupPath)) {
+            await fs.copy(nextConfigBackupPath, nextConfigPath, { overwrite: true });
+            await fs.remove(nextConfigBackupPath);
+            console.log('✓ next.config.ts restauré à son état dynamique (Vercel-ready)');
+        }
+
     } catch (err) {
         console.error('Error restoring files:', err);
         process.exit(1);

@@ -45,6 +45,22 @@ async function swapForNative() {
             console.warn('(server-routes) not found, skipping...');
         }
 
+        // ── 3. Injecter la configuration statique pour Capacitor ──
+        const nextConfigPath = path.join(__dirname, '../next.config.ts');
+        if (fs.existsSync(nextConfigPath)) {
+            let configStr = await fs.readFile(nextConfigPath, 'utf8');
+            await fs.writeFile(nextConfigPath + '.backup', configStr);
+
+            if (!configStr.includes("output: 'export'")) {
+                configStr = configStr.replace(
+                    "const nextConfig: NextConfig = {",
+                    "const nextConfig: NextConfig = {\n  output: 'export',\n  distDir: 'dist',"
+                );
+                await fs.writeFile(nextConfigPath, configStr);
+                console.log("✓ next.config.ts paramétré pour l'export statique");
+            }
+        }
+
     } catch (err) {
         console.error('Error swapping files:', err);
         process.exit(1);
