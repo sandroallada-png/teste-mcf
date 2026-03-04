@@ -9,7 +9,14 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { PlusCircle, Refrigerator, X, Sparkles, Loader2, Bot, ShoppingCart, ChefHat } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from '@/components/ui/dialog';
+import { PlusCircle, Refrigerator, X, Sparkles, Loader2, Bot, ShoppingCart, ChefHat, Info } from 'lucide-react';
 import { useUser, useFirebase, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, doc, serverTimestamp, query, orderBy, Timestamp } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
@@ -46,6 +53,7 @@ export function MainPanel() {
     const [suggestions, setSuggestions] = useState<RecipeSuggestion[]>([]);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
     const [isSendingToKitchen, setIsSendingToKitchen] = useState<string | null>(null);
+    const [isSoonDialogOpen, setIsSoonDialogOpen] = useState(false);
     const { toast } = useToast();
     const { isReadOnly, guardAction, triggerBlock } = useReadOnly();
 
@@ -126,7 +134,9 @@ export function MainPanel() {
                 {/* Header Section */}
                 <div className="space-y-6">
                     <div className="space-y-2">
-                        <div className="text-5xl mb-4">🧊</div>
+                        <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20 shadow-inner">
+                            <Refrigerator className="h-8 w-8 text-primary" />
+                        </div>
                         <h1 className="text-2xl md:text-4xl font-bold tracking-tight">Mon Frigo</h1>
                         <p className="text-muted-foreground text-sm max-w-2xl">
                             Gérez vos ingrédients disponibles et recevez des suggestions de recettes personnalisées par notre IA.
@@ -135,8 +145,7 @@ export function MainPanel() {
 
                     <div className="flex flex-wrap gap-3">
                         <Button
-                            onClick={handleGetSuggestions}
-                            disabled={isLoadingSuggestions || !ingredients || ingredients.length === 0}
+                            onClick={() => setIsSoonDialogOpen(true)}
                             className="h-9 px-4 text-xs font-semibold rounded shadow-sm transition-colors"
                         >
                             {isLoadingSuggestions ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-2 h-3.5 w-3.5" />}
@@ -278,6 +287,27 @@ export function MainPanel() {
                     </div>
                 </div>
             </div>
+
+            <Dialog open={isSoonDialogOpen} onOpenChange={setIsSoonDialogOpen}>
+                <DialogContent className="sm:max-w-md rounded-2xl">
+                    <DialogHeader>
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+                            <Sparkles className="h-8 w-8 text-primary" />
+                        </div>
+                        <DialogTitle className="text-center text-xl font-black">Bientôt Disponible ✨</DialogTitle>
+                        <DialogDescription className="text-center pt-2 px-2 text-sm text-foreground/80 leading-relaxed font-medium">
+                            Cette fonctionnalité est en cours de préparation. 
+                            <br/><br/>
+                            L'IA analysera automatiquement tous les ingrédients de votre stock actuel et vous proposera instantanément des recettes sur-mesure ! 
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-4 flex justify-center pb-2">
+                        <Button onClick={() => setIsSoonDialogOpen(false)} className="w-full md:w-auto px-8 rounded-full font-bold">
+                            J'ai compris
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

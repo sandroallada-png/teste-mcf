@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
     SidebarProvider,
     Sidebar as AppSidebar,
@@ -8,15 +8,15 @@ import {
 } from '@/components/ui/sidebar';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { useUser, useFirebase, useMemoFirebase, useCollection, useDoc } from '@/firebase';
-import { collection, query, Timestamp, doc, where } from 'firebase/firestore';
+import { collection, query, Timestamp, doc, where, orderBy, limit, setDoc, updateDoc, getDocs } from 'firebase/firestore';
 import type { Dish, Meal, UserProfile } from '@/lib/types';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { startOfToday, addDays, format } from 'date-fns';
 import {
     Package, Calendar, ChevronRight, Sparkles, Clock, Flame, ArrowRight,
     UtensilsCrossed, Coffee, Sun, Apple, Moon, Loader2, ZoomIn, Info,
     RefreshCw, Check, X, Settings2, CalendarDays, CalendarRange, User2,
-    Target, MapPin, HeartPulse,
+    Target, MapPin, HeartPulse, AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -43,7 +43,7 @@ type BoxMeal = {
     calories: number;
     image: string;
     category: string;
-    type: 'breakfast' | 'lunch' | 'snack' | 'dinner';
+    type: 'breakfast' | 'lunch' | 'dessert' | 'dinner';
     matchReason?: string; // why this dish was chosen
 };
 
@@ -51,12 +51,12 @@ type DayPlan = { day: number; label: string; meals: BoxMeal[] };
 type WeeklyBox = { week: number; title: string; description: string; theme: string; color: string; days: DayPlan[] };
 type PlanEntry = BoxMeal & { dayIndex: number; dayLabel: string; enabled: boolean };
 
-const MEAL_TYPES: BoxMeal['type'][] = ['breakfast', 'lunch', 'snack', 'dinner'];
+const MEAL_TYPES: BoxMeal['type'][] = ['breakfast', 'lunch', 'dessert', 'dinner'];
 
 const mealTypesMeta: Record<string, { label: string; icon: React.ReactNode }> = {
     breakfast: { label: 'Petit-déj', icon: <Coffee className="h-3 w-3" /> },
     lunch: { label: 'Déjeuner', icon: <Sun className="h-3 w-3" /> },
-    snack: { label: 'Dessert / Collation', icon: <Apple className="h-3 w-3" /> },
+    dessert: { label: 'Dessert / Collation', icon: <Apple className="h-3 w-3" /> },
     dinner: { label: 'Dîner', icon: <Moon className="h-3 w-3" /> },
 };
 
@@ -247,6 +247,16 @@ export default function BoxPage() {
     const [planEntries, setPlanEntries] = useState<PlanEntry[]>([]);
     const [isPlanning, setIsPlanning] = useState(false);
 
+    const [savedBox, setSavedBox] = useState<{ id?: string; createdAt: Timestamp; boxes: WeeklyBox[] } | null>(null);
+    const [savedBoxId, setSavedBoxId] = useState<string | null>(null);
+    const [isLoadingBoxes, setIsLoadingBoxes] = useState(true);
+
+    const [conflictList, setConflictList] = useState<{planEntry: PlanEntry, existingMeal: any, date: Date}[]>([]);
+    const [conflictIdx, setConflictIdx] = useState(0);
+    const [pendingPlanEntries, setPendingPlanEntries] = useState<PlanEntry[]>([]);
+    const [pendingDeletions, setPendingDeletions] = useState<string[]>([]);
+    const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+
     /* ── Data ──────────────────────────────────────── */
     const dishesRef = useMemoFirebase(
         () => query(collection(firestore, 'dishes'), where('isVerified', '==', true)),
@@ -258,8 +268,14 @@ export default function BoxPage() {
         () => (user ? doc(firestore, 'users', user.uid) : null),
         [user, firestore]
     );
-    const { data: userProfile } = useDoc<UserProfile>(profileRef);
+    const { data: userProfile, isLoading: isLoadingProfile } = useDoc<UserProfile>(profileRef);
     const effectiveChefId = userProfile?.chefId || user?.uid;
+
+    const savedBoxQuery = useMemoFirebase(
+        () => (effectiveChefId ? query(collection(firestore, 'users', effectiveChefId, 'suggestionbox'), orderBy('createdAt', 'desc'), limit(1)) : null),
+        [effectiveChefId, firestore]
+    );
+    const { data: savedBoxData, isLoading: isLoadingSavedBox } = useCollection<any>(savedBoxQuery);
 
     const mealsRef = useMemoFirebase(
         () => (effectiveChefId ? collection(firestore, 'users', effectiveChefId, 'foodLogs') : null),
@@ -267,8 +283,49 @@ export default function BoxPage() {
     );
     const { data: mealsData } = useCollection<Meal>(mealsRef);
 
+    useEffect(() => {
+        if (isLoadingSavedBox || isLoadingProfile || isLoadingDishes || !dishes || dishes.length === 0 || !effectiveChefId) {
+            if (!isLoadingDishes && (!dishes || dishes.length === 0)) setIsLoadingBoxes(false);
+            return;
+        }
+
+        if (savedBoxData && savedBoxData.length > 0) {
+            const latestBox = savedBoxData[0];
+            const ageInDays = latestBox.createdAt?.toMillis ? (Date.now() - latestBox.createdAt.toMillis()) / (1000 * 60 * 60 * 24) : 0;
+            
+            if (ageInDays < 28 && latestBox.boxes?.length > 0) {
+                setSavedBox(latestBox);
+                setSavedBoxId(latestBox.id);
+                setIsLoadingBoxes(false);
+                return;
+            }
+        }
+
+        if (savedBox) return; // Prevent double trigger
+
+        const newBoxes = buildBoxes(dishes, userProfile);
+        const docRef = doc(collection(firestore, 'users', effectiveChefId, 'suggestionbox'));
+        const boxDoc = {
+            createdAt: Timestamp.now(),
+            boxes: newBoxes,
+        };
+        
+        setSavedBox(boxDoc);
+        setSavedBoxId(docRef.id);
+        setIsLoadingBoxes(false);
+        
+        setDoc(docRef, boxDoc).catch(console.error);
+
+        addDocumentNonBlocking(collection(firestore, 'users', effectiveChefId, 'boxHistory'), {
+            createdAt: Timestamp.now(),
+            type: 'box_generated',
+            reason: savedBoxData?.length ? '28_days_expired' : 'first_time'
+        });
+
+    }, [isLoadingSavedBox, savedBoxData, isLoadingProfile, userProfile, isLoadingDishes, dishes, firestore, effectiveChefId, savedBox]);
+
     /* ── Derived ───────────────────────────────────── */
-    const boxes = useMemo(() => buildBoxes(dishes || [], userProfile), [dishes, userProfile]);
+    const boxes = useMemo(() => savedBox?.boxes || [], [savedBox]);
     const currentBox = useMemo(() => boxes.find(b => b.week === selectedWeek) || boxes[0], [boxes, selectedWeek]);
     const currentDay = useMemo(() => currentBox?.days.find(d => d.day === selectedDay) || currentBox?.days[0], [currentBox, selectedDay]);
     const totalKcal = currentDay?.meals.reduce((s, m) => s + m.calories, 0) || 0;
@@ -295,7 +352,6 @@ export default function BoxPage() {
         if (!dishes?.length) return;
         setPlanEntries(prev => prev.map(e => {
             if (e.id !== id || e.dayIndex !== dayIndex) return e;
-            // Profile-scored pool, exclude current dish
             const pool = [...dishes]
                 .filter(d => d.name !== e.name)
                 .map(d => ({ dish: d, score: scoreDish(d, userProfile) }))
@@ -305,7 +361,17 @@ export default function BoxPage() {
             const candidates = pool.filter(d => d.category === e.category);
             const src = candidates.length ? candidates : pool;
             if (!src.length) return e;
-            const pick = src[Math.floor(Math.random() * Math.min(src.length, 5))]; // pick from top-5
+            const pick = src[Math.floor(Math.random() * Math.min(src.length, 5))];
+            
+            if (effectiveChefId) {
+                addDocumentNonBlocking(collection(firestore, 'users', effectiveChefId, 'boxHistory'), {
+                    createdAt: Timestamp.now(),
+                    type: 'meal_swapped_in_planner',
+                    replaced: e.name,
+                    replacement: pick.name
+                });
+            }
+
             return {
                 ...e,
                 name: pick.name,
@@ -318,16 +384,79 @@ export default function BoxPage() {
         }));
     };
 
+    const swapMealInBox = (e: React.MouseEvent, dayIdx: number, mealType: string) => {
+        e.stopPropagation();
+        if (!dishes?.length || !effectiveChefId || !savedBoxId || !savedBox) return;
+        
+        const currentMeal = boxes.find(b => b.week === selectedWeek)?.days.find(d => d.day === dayIdx)?.meals.find(m => m.type === mealType);
+        if (!currentMeal) return;
+
+        const pool = [...dishes]
+            .filter(d => d.name !== currentMeal.name)
+            .map(d => ({ dish: d, score: scoreDish(d, userProfile) }))
+            .filter(s => s.score > -9000)
+            .sort((a, b) => b.score - a.score)
+            .map(s => s.dish);
+        
+        const candidates = pool.filter(d => d.category === currentMeal.category);
+        const src = candidates.length ? candidates : pool;
+        if (!src.length) return;
+        const pick = src[Math.floor(Math.random() * Math.min(src.length, 5))];
+
+        const newBoxes = boxes.map(b => {
+            if (b.week !== selectedWeek) return b;
+            return {
+                ...b,
+                days: b.days.map(d => {
+                    if (d.day !== dayIdx) return d;
+                    return {
+                        ...d,
+                        meals: d.meals.map(m => {
+                            if (m.type !== mealType) return m;
+                            return {
+                                ...m,
+                                name: pick.name,
+                                time: pick.cookingTime || '20 min',
+                                calories: pick.calories || 450,
+                                image: pick.imageUrl || `https://picsum.photos/seed/${pick.name}/400/400`,
+                                category: pick.category,
+                                matchReason: matchReason(pick, userProfile),
+                            };
+                        })
+                    };
+                })
+            };
+        });
+
+        setSavedBox({ ...savedBox, boxes: newBoxes });
+
+        const docRef = doc(firestore, 'users', effectiveChefId, 'suggestionbox', savedBoxId);
+        updateDoc(docRef, { boxes: newBoxes }).catch(console.error);
+
+        addDocumentNonBlocking(collection(firestore, 'users', effectiveChefId, 'boxHistory'), {
+            createdAt: Timestamp.now(),
+            type: 'meal_skipped_in_box_view',
+            skippedMeal: currentMeal.name,
+            replacementMeal: pick.name,
+        });
+        
+        toast({ title: "Repas remplacé !", description: `${currentMeal.name} a été échangé.`, duration: 2000 });
+    };
+
     /* ── Confirm plan ──────────────────────────────── */
-    const handleConfirmPlan = async () => {
+    const executePlan = async (entries: PlanEntry[], deletions: string[]) => {
         if (!user || !effectiveChefId || !currentBox) return;
         setIsPlanning(true);
         const cookingRef = collection(firestore, 'users', effectiveChefId, 'cooking');
         const planStartDate = startDate || startOfToday();
-        const enabled = planEntries.filter(e => e.enabled);
-
+        
         try {
-            await Promise.all(enabled.map(entry => {
+            for (const id of deletions) {
+                const docRef = doc(firestore, 'users', effectiveChefId, 'cooking', id);
+                await deleteDocumentNonBlocking(docRef);
+            }
+
+            await Promise.all(entries.map(entry => {
                 const date = addDays(planStartDate, entry.dayIndex - 1);
                 const dish = dishes?.find(d => d.name === entry.name);
                 return addDocumentNonBlocking(cookingRef, {
@@ -343,15 +472,94 @@ export default function BoxPage() {
                     plannedFor: Timestamp.fromDate(date),
                 });
             }));
+            
             toast({
                 title: '✅ Box Planifiée !',
-                description: `${enabled.length} repas basés sur votre profil, ajoutés à partir du ${format(planStartDate, 'dd MMMM', { locale: fr })}.`,
+                description: `${entries.length} repas basés sur votre profil, ajoutés avec succès.`,
             });
+            
+            addDocumentNonBlocking(collection(firestore, 'users', effectiveChefId, 'boxHistory'), {
+                createdAt: Timestamp.now(),
+                type: 'box_planned',
+                acceptedCount: entries.length,
+                replacedConflicts: deletions.length,
+            });
+
             setPlanOpen(false);
+            setConflictDialogOpen(false);
         } catch {
-            toast({ variant: 'destructive', title: 'Erreur', description: 'Une erreur est survenue.' });
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Une erreur est survenue lors de la planification.' });
         } finally {
             setIsPlanning(false);
+        }
+    };
+
+    const handleConfirmPlan = async () => {
+        if (!user || !effectiveChefId || !currentBox) return;
+        setIsPlanning(true);
+        const cookingRef = collection(firestore, 'users', effectiveChefId, 'cooking');
+        const planStartDate = startDate || startOfToday();
+        const enabled = planEntries.filter(e => e.enabled);
+
+        try {
+            const endDate = addDays(planStartDate, duration);
+            const existingQuery = query(
+                cookingRef,
+                where('plannedFor', '>=', Timestamp.fromDate(planStartDate)),
+                where('plannedFor', '<', Timestamp.fromDate(endDate))
+            );
+            const snap = await getDocs(existingQuery);
+            const existingMeals = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+
+            const foundConflicts: {planEntry: PlanEntry, existingMeal: any, date: Date}[] = [];
+            
+            for (const entry of enabled) {
+                const date = addDays(planStartDate, entry.dayIndex - 1);
+                const matchingExisting = existingMeals.find(m => {
+                    const mDate = m.plannedFor?.toDate ? m.plannedFor.toDate() : new Date(m.plannedFor);
+                    return format(mDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && m.type === entry.type;
+                });
+                
+                if (matchingExisting) {
+                    foundConflicts.push({ planEntry: entry, existingMeal: matchingExisting, date });
+                }
+            }
+
+            if (foundConflicts.length > 0) {
+                setPendingPlanEntries(enabled);
+                setPendingDeletions([]);
+                setConflictList(foundConflicts);
+                setConflictIdx(0);
+                setConflictDialogOpen(true);
+                setIsPlanning(false);
+                return;
+            }
+
+            await executePlan(enabled, []);
+        } catch {
+            setIsPlanning(false);
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de vérifier les conflits.' });
+        }
+    };
+
+    const handleConflictDecision = (decision: 'keep_old' | 'replace') => {
+        const currentConflict = conflictList[conflictIdx];
+        let newEntries = [...pendingPlanEntries];
+        let newDeletions = [...pendingDeletions];
+
+        if (decision === 'keep_old') {
+            newEntries = newEntries.filter(e => !(e.id === currentConflict.planEntry.id && e.dayIndex === currentConflict.planEntry.dayIndex));
+        } else {
+            newDeletions.push(currentConflict.existingMeal.id);
+        }
+
+        setPendingPlanEntries(newEntries);
+        setPendingDeletions(newDeletions);
+
+        if (conflictIdx < conflictList.length - 1) {
+            setConflictIdx(conflictIdx + 1);
+        } else {
+            executePlan(newEntries, newDeletions);
         }
     };
 
@@ -383,7 +591,7 @@ export default function BoxPage() {
                     <div className="flex h-full flex-1 flex-col overflow-hidden">
                         <AppHeader title="Ma Box Nutritionnelle" icon={<Package className="h-6 w-6" />} user={user} sidebarProps={sidebarProps} />
                         <main className="flex-1 overflow-y-auto">
-                            {isLoadingDishes ? (
+                            {isLoadingBoxes || isLoadingDishes ? (
                                 <div className="flex h-64 items-center justify-center">
                                     <Loader2 className="h-10 w-10 animate-spin text-primary" />
                                 </div>
@@ -588,7 +796,16 @@ export default function BoxPage() {
                                                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                                                                 <ZoomIn className="h-7 w-7 text-white drop-shadow-lg" />
                                                             </div>
-                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3">
+                                                            <div className="absolute top-2 right-2 z-20">
+                                                                <button
+                                                                    onClick={(e) => swapMealInBox(e, currentDay.day, meal.type)}
+                                                                    className="h-8 w-8 rounded-full bg-background/90 text-primary hover:bg-primary hover:text-white flex items-center justify-center shadow-lg transition-all active:scale-95 opacity-0 group-hover:opacity-100"
+                                                                    title="Changer de repas"
+                                                                >
+                                                                    <RefreshCw className="h-4 w-4" />
+                                                                </button>
+                                                            </div>
+                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3 pointer-events-none">
                                                                 <span className="flex items-center gap-1 text-white/60 text-[9px] font-black uppercase tracking-widest mb-1">
                                                                     {mealTypesMeta[meal.type].icon}
                                                                     {mealTypesMeta[meal.type].label}
@@ -715,7 +932,7 @@ export default function BoxPage() {
                     </div>
 
                     {/* Meals grid */}
-                    <ScrollArea className="flex-1 md:max-h-[50vh]">
+                    <div className="flex-1 overflow-y-auto md:max-h-[50vh] scrollbar-hide">
                         <div className="p-5 space-y-6">
                             {groupedEntries.map(({ label, entries }) => (
                                 <div key={label}>
@@ -772,7 +989,7 @@ export default function BoxPage() {
                                 </div>
                             ))}
                         </div>
-                    </ScrollArea>
+                    </div>
 
                     {/* Footer */}
                     <div className="p-4 md:p-5 border-t border-border/10 bg-background/50 backdrop-blur-md shrink-0 mb-safe flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -792,6 +1009,43 @@ export default function BoxPage() {
                                 {isPlanning ? 'En cours...' : `Planifier ${enabledCount} repas`}
                             </Button>
                         </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={conflictDialogOpen} onOpenChange={setConflictDialogOpen}>
+                <DialogContent className="max-w-sm rounded-[2rem] border-none shadow-2xl p-6 bg-background">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-destructive font-black text-xl">
+                            <AlertTriangle className="h-6 w-6" /> Conflit détecté
+                        </DialogTitle>
+                        <DialogDescription className="text-sm font-medium pt-1 text-muted-foreground">
+                            Vous avez déjà un plat prévu pour ce repas le {conflictList[conflictIdx] ? format(conflictList[conflictIdx].date, 'EEEE d MMM', { locale: fr }) : ''} ({conflictList[conflictIdx] ? mealTypesMeta[conflictList[conflictIdx].planEntry.type].label : ''}).
+                        </DialogDescription>
+                    </DialogHeader>
+                    {conflictList[conflictIdx] && (
+                        <div className="space-y-4 my-2">
+                            <div className="bg-muted p-4 rounded-2xl border border-border/50">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Déjà programmé :</p>
+                                <p className="text-sm font-bold text-foreground">{conflictList[conflictIdx].existingMeal.name}</p>
+                            </div>
+                            <div className="flex justify-center -my-1"><ArrowRight className="h-5 w-5 text-muted-foreground/50 rotate-90" /></div>
+                            <div className="bg-primary/10 p-4 rounded-2xl border border-primary/20">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Nouveau plat (Box) :</p>
+                                <p className="text-sm font-bold text-foreground">{conflictList[conflictIdx].planEntry.name}</p>
+                            </div>
+                            <p className="text-[10px] font-black uppercase text-center text-muted-foreground/60 tracking-widest pt-2">
+                                Résolution : {conflictIdx + 1} sur {conflictList.length}
+                            </p>
+                        </div>
+                    )}
+                    <div className="flex flex-col gap-2 mt-4">
+                        <Button onClick={() => handleConflictDecision('replace')} className="rounded-xl h-12 font-black text-xs shadow-lg uppercase tracking-wider">
+                            Remplacer par le nouveau
+                        </Button>
+                        <Button variant="outline" onClick={() => handleConflictDecision('keep_old')} className="rounded-xl h-12 text-xs border-border font-bold uppercase tracking-wider text-muted-foreground">
+                            Garder l'ancien plat
+                        </Button>
                     </div>
                 </DialogContent>
             </Dialog>

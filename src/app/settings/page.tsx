@@ -28,6 +28,7 @@ import { AppHeader } from '@/components/layout/app-header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ImageZoomLightbox } from '@/components/shared/image-zoom-lightbox';
 import { Textarea } from '@/components/ui/textarea';
 import { cn, formatUserIdentifier } from '@/lib/utils';
 import { useReadOnly } from '@/contexts/read-only-context';
@@ -70,6 +71,7 @@ export default function SettingsPage() {
     const [displayName, setDisplayName] = useState(user?.displayName || '');
     const [isMarketSubscribed, setIsMarketSubscribed] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
 
     // AI Personality State
     const [personality, setPersonality] = useState<Partial<UserProfileType>>(defaultPersonality);
@@ -314,7 +316,7 @@ export default function SettingsPage() {
 
                             <div className="flex flex-col md:flex-row gap-10 items-start">
                                 <div className="relative group">
-                                    <Avatar className="h-24 w-24 border rounded-lg cursor-pointer transition-opacity hover:opacity-80" onClick={() => router.push('/avatar-selection')}>
+                                    <Avatar className="h-24 w-24 border rounded-lg cursor-zoom-in transition-opacity hover:opacity-80" onClick={() => setZoomImageUrl(userProfile?.avatarUrl || user.photoURL || null)}>
                                         <AvatarImage src={userProfile?.avatarUrl || user.photoURL || undefined} />
                                         <AvatarFallback className="text-2xl font-bold bg-muted">{displayName?.charAt(0).toUpperCase()}</AvatarFallback>
                                     </Avatar>
@@ -646,44 +648,10 @@ export default function SettingsPage() {
                             </div>
                         </section>
 
-                        {/* DANGER SECTION */}
-                        <section className="space-y-6 pt-10 border-t">
-                            <div className="flex items-center gap-2">
-                                <Trash2 className="h-4 w-4 text-destructive/60" />
-                                <h2 className="text-sm font-semibold text-destructive/60">Zone de danger</h2>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5 sm:p-6 bg-destructive/5 border border-destructive/10 rounded-lg">
-                                <div className="space-y-1">
-                                    <p className="text-sm font-bold text-destructive/80">Supprimer le compte</p>
-                                    <p className="text-xs text-destructive/60">Cette action est irréversible et effacera toutes vos données.</p>
-                                </div>
-
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" className="h-8 text-xs font-bold text-destructive hover:bg-destructive/10">
-                                            Supprimer définitivement
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent className="rounded-lg">
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Cela supprimera définitivement votre compte et retirera vos données de nos serveurs.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel className="h-9 text-xs rounded">Annuler</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDeleteAccount} className="h-9 text-xs rounded bg-destructive hover:bg-destructive/90">
-                                                Supprimer mon compte
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        </section>
+                        {/* DANGER SECTION REMOVED */}
                     </div>
                 </main>
+                <ImageZoomLightbox imageUrl={zoomImageUrl} onClose={() => setZoomImageUrl(null)} />
             </SidebarInset>
         </SidebarProvider>
     );

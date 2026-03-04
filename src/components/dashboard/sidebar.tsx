@@ -35,7 +35,7 @@ export const mainNavLinks = [
   { href: '/box', label: <span className="flex items-center gap-2">Ma Box <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-primary/10 text-primary border-none">Nouveau</Badge></span>, icon: <Package className="h-5 w-5" /> },
   { href: '/atelier', label: <span className="flex items-center gap-2">Atelier du Chef <Gem className="h-3 w-3 text-primary" /></span>, icon: <Library className="h-5 w-5" /> },
   { href: '/calendar', label: 'Calendrier', icon: <Calendar className="h-5 w-5" /> },
-  { href: '/my-flex-ai', label: 'Assistant Personnel', icon: <Bot className="h-5 w-5" /> },
+  { href: '/my-flex-ai', label: 'My Flex Coach', icon: <Bot className="h-5 w-5" /> },
   { href: '/fridge', label: <span className="flex items-center gap-2">Frigo <Gem className="h-3 w-3 text-primary" /></span>, icon: <Refrigerator className="h-5 w-5" /> },
   { href: '/courses', label: <span className="flex items-center gap-2">Courses <Gem className="h-3 w-3 text-primary" /></span>, icon: <ShoppingCart className="h-5 w-5" /> },
   { href: '/mon-niveau', label: 'Mon Niveau', icon: <Trophy className="h-5 w-5" /> },

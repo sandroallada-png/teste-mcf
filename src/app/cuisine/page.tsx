@@ -33,6 +33,7 @@ import { WhoIsCooking } from '@/components/cuisine/who-is-cooking';
 import { useReadOnly } from '@/contexts/read-only-context';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageWrapper } from '@/components/shared/page-wrapper';
+import { openDishPreview } from '@/components/shared/global-dish-preview';
 
 type TimeOfDay = 'matin' | 'midi' | 'soir' | 'dessert';
 
@@ -154,6 +155,8 @@ export default function CuisinePage() {
     const favoritesCollectionRef = useMemoFirebase(() => (user ? collection(firestore, 'users', user.uid, 'favoriteRecipes') : null), [user, firestore]);
     const { data: favorites } = useCollection<{ id: string }>(favoritesCollectionRef);
 
+    const currentDayStr = currentTime ? format(currentTime, 'yyyy-MM-dd') : null;
+
     const { cookingInProgress, pastCookingItems } = useMemo(() => {
         if (!cookingItems) {
             return { cookingInProgress: [], pastCookingItems: [] };
@@ -178,7 +181,7 @@ export default function CuisinePage() {
         inProgress.sort((a, b) => (a.plannedFor?.toDate() ?? 0) > (b.plannedFor?.toDate() ?? 0) ? 1 : -1);
 
         return { cookingInProgress: inProgress, pastCookingItems: past };
-    }, [cookingItems]);
+    }, [cookingItems, currentDayStr]);
 
     const dishCategories = useMemo(() => {
         if (!dishes) return [];
@@ -206,12 +209,55 @@ export default function CuisinePage() {
     const { message: contextualMessage, image: contextualImage, timeOfDay } = currentTime ? getContextualInfo(currentTime.getHours()) : { message: 'Chargement...', image: "/soir.png", timeOfDay: 'soir' as TimeOfDay };
 
     useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const query = new URLSearchParams(window.location.search);
+            const tab = query.get('tab');
+            if (tab && tabDetails[tab as TabValue]) {
+                setActiveTab(tab as TabValue);
+                // Clean URL
+                window.history.replaceState({}, '', '/cuisine');
+            }
+        }
+    }, []);
+
+    useEffect(() => {
         setCurrentTime(new Date());
         const timer = setInterval(() => {
             setCurrentTime(new Date());
         }, 60000);
         return () => clearInterval(timer);
     }, []);
+
+    // Effect to handle missed meals
+    useEffect(() => {
+        if (!effectiveChefId || !userProfileRef || !pastCookingItems.length) return;
+        const missedItems = pastCookingItems.filter(item => !item.isDone && !(item as any).isMissedProcessed);
+        
+        if (missedItems.length > 0) {
+            missedItems.forEach(async (item) => {
+                const ref = doc(firestore, 'users', effectiveChefId, 'cooking', item.id);
+                updateDoc(ref, { isMissedProcessed: true }).catch(console.error);
+
+                const xpPenalty = -5;
+                try {
+                    const userDoc = await getDoc(userProfileRef);
+                    if (userDoc.exists()) {
+                        const currentXp = userDoc.data()?.xp ?? 0;
+                        const newXp = Math.max(0, currentXp + xpPenalty);
+                        const newLevel = Math.floor(newXp / 500) + 1;
+                        await updateDoc(userProfileRef, { xp: newXp, level: newLevel });
+                        toast({
+                            variant: 'destructive',
+                            title: 'Repas manqué',
+                            description: `Oups ! Vous n'avez pas cuisiné "${item.name}" hier. -5 XP.`
+                        });
+                    }
+                } catch (e) {
+                    console.error("Failed to deduct XP for missed meal", e);
+                }
+            });
+        }
+    }, [pastCookingItems, effectiveChefId, userProfileRef, toast, firestore]);
 
     useEffect(() => {
         const fetchRecs = async () => {
@@ -227,11 +273,26 @@ export default function CuisinePage() {
                 count: 6,
                 timeOfDay: mappedTimeOfDay as any
             });
-            if (recs) setRecommendations(recs as any);
+            
+            if (recs && recs.length > 0) {
+                setRecommendations(recs as any);
+            } else if (dishes && dishes.length > 0) {
+                // Fallback to random dishes from catalogue if AI fails or has no recommendations
+                const fallbackDishes = [...dishes].sort(() => 0.5 - Math.random()).slice(0, 3).map(d => ({
+                    ...d,
+                    matchReason: 'Découverte du catalogue'
+                }));
+                // Wait for dishes to be populated
+                setRecommendations(fallbackDishes as any);
+            }
             setIsLoadingRecs(false);
         };
-        if (user) fetchRecs();
-    }, [user, timeOfDay]);
+        if (user && dishes && dishes.length > 0) {
+            fetchRecs();
+        } else if (user && (!dishes || dishes.length === 0)) {
+           // Allow initial skeleton load while dishes load
+        }
+    }, [user, timeOfDay, dishes]);
 
     // --- Data fetching for sidebar and AI ---
     const allMealsCollectionRef = useMemoFirebase(
@@ -484,6 +545,17 @@ export default function CuisinePage() {
 
                 const ref = doc(firestore, 'users', effectiveChefId, 'cooking', item.id);
                 updateDoc(ref, { isDone: true }).catch(console.error);
+
+                const xpGained = 15;
+                if (userProfileRef) {
+                    getDoc(userProfileRef).then(userDoc => {
+                        const currentXp = userDoc.data()?.xp ?? 0;
+                        const newXp = currentXp + xpGained;
+                        const newLevel = Math.floor(newXp / 500) + 1;
+                        updateDoc(userProfileRef, { xp: increment(xpGained), level: newLevel });
+                        toast({ title: 'Repas terminé !', description: `Vous avez cuisiné ${item.name}. +${xpGained} XP !`});
+                    }).catch(console.error);
+                }
             }
             setDismissingCookingId(null);
             setCookingModeItem(null);
@@ -567,7 +639,24 @@ export default function CuisinePage() {
         );
 
         try {
-            await addDocumentNonBlocking(collection(firestore, 'users', effectiveChefId, 'cooking'), {
+            const mealType = masterDish?.type || 'lunch';
+            const dayStart = startOfDay(new Date());
+            const dayEnd = endOfDay(new Date());
+
+            const mealsRef = collection(firestore, 'users', effectiveChefId, 'foodLogs');
+            const cookingRef = collection(firestore, 'users', effectiveChefId, 'cooking');
+
+            const qMeals = query(mealsRef, where('date', '>=', Timestamp.fromDate(dayStart)), where('date', '<=', Timestamp.fromDate(dayEnd)), where('type', '==', mealType));
+            const qCooking = query(cookingRef, where('plannedFor', '>=', Timestamp.fromDate(dayStart)), where('plannedFor', '<=', Timestamp.fromDate(dayEnd)), where('type', '==', mealType));
+
+            const [mSnap, cSnap] = await Promise.all([getDocs(qMeals), getDocs(qCooking)]);
+
+            const deletePromises: Promise<void>[] = [];
+            mSnap.forEach(d => deletePromises.push(deleteDoc(d.ref)));
+            cSnap.forEach(d => deletePromises.push(deleteDoc(d.ref)));
+            await Promise.all(deletePromises);
+
+            await addDocumentNonBlocking(cookingRef, {
                 userId: user.uid,
                 name: item.name,
                 calories: masterDish?.calories || 0,
@@ -679,17 +768,25 @@ export default function CuisinePage() {
         if (!user || !effectiveChefId) return;
 
         try {
-            // Check and remove existing meal for this slot if it exists (the dialog already asked for confirmation)
-            const conflict = cookingItems?.find(c => {
-                const cDate = c.plannedFor?.toDate ? c.plannedFor.toDate() : new Date(c.plannedFor);
-                return format(cDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && c.type === slot;
-            });
+            const dayStart = startOfDay(date);
+            const dayEnd = endOfDay(date);
 
-            if (conflict) {
-                await deleteDoc(doc(firestore, 'users', effectiveChefId, 'cooking', conflict.id));
-            }
+            const mealsRef = collection(firestore, 'users', effectiveChefId, 'foodLogs');
+            const cookingRef = collection(firestore, 'users', effectiveChefId, 'cooking');
 
-            await addDocumentNonBlocking(collection(firestore, 'users', effectiveChefId, 'cooking'), {
+            const qMeals = query(mealsRef, where('date', '>=', Timestamp.fromDate(dayStart)), where('date', '<=', Timestamp.fromDate(dayEnd)), where('type', '==', slot));
+            const qCooking = query(cookingRef, where('plannedFor', '>=', Timestamp.fromDate(dayStart)), where('plannedFor', '<=', Timestamp.fromDate(dayEnd)), where('type', '==', slot));
+
+            const [mSnap, cSnap] = await Promise.all([getDocs(qMeals), getDocs(qCooking)]);
+
+            const deletePromises: Promise<void>[] = [];
+            mSnap.forEach(d => deletePromises.push(deleteDoc(d.ref)));
+            cSnap.forEach(d => deletePromises.push(deleteDoc(d.ref)));
+            await Promise.all(deletePromises);
+
+            const conflict = cSnap.size > 0 || mSnap.size > 0;
+
+            await addDocumentNonBlocking(cookingRef, {
                 userId: user.uid,
                 name: meal.name,
                 calories: meal.calories || 0,
@@ -770,8 +867,8 @@ export default function CuisinePage() {
                         <div className="max-w-6xl mx-auto w-full py-4 md:py-6 space-y-0">
 
                             {/* Header Section */}
-                            <div className="space-y-2 px-4 md:px-8 pb-4 pt-20 md:pt-24">
-                                <div className="relative w-10 h-10 md:w-12 md:h-12 mb-2 select-none">
+                            <div className="space-y-3 px-4 md:px-8 pb-4 pt-20 md:pt-24">
+                                <div className="relative w-14 h-14 md:w-16 md:h-16 mb-2 select-none">
                                     <Image
                                         src={contextualImage}
                                         alt="Context Icon"
@@ -780,8 +877,8 @@ export default function CuisinePage() {
                                         priority
                                     />
                                 </div>
-                                <h1 className="text-xl md:text-3xl font-bold tracking-tight">Espace Cuisine</h1>
-                                <p className="text-muted-foreground text-xs max-w-2xl hidden sm:block">
+                                <h1 className="text-2xl md:text-4xl font-black tracking-tight">Espace Cuisine</h1>
+                                <p className="text-muted-foreground text-xs md:text-sm max-w-2xl hidden sm:block">
                                     Planifiez vos repas, explorez de nouveaux plats et suivez votre historique culinaire. {contextualMessage}
                                 </p>
                             </div>
@@ -789,12 +886,12 @@ export default function CuisinePage() {
 
                         {/* ── PERMANENTLY STABLE FIXED TABS DOCK ── */}
                         {/* Fixed below the h-14 header (top-14) to avoid overlapping the brand navigation */}
-                        <div className="fixed top-14 inset-x-0 z-[45] pointer-events-none transform-gpu">
+                        <div className="fixed top-14 left-0 md:left-64 right-0 z-[45] pointer-events-none transform-gpu transition-[left] duration-300">
                             {/* Visual mask matching header backdrop offset to top-14 */}
                             <div className="absolute inset-x-0 bottom-0 top-0 bg-background/80 backdrop-blur-xl border-b border-border/40 -z-10" />
                             
-                            <div className="pointer-events-auto pt-4 pb-4 w-full flex justify-center px-4">
-                                <div className="bg-background/80 backdrop-blur-xl border border-border/40 shadow-2xl rounded-2xl p-1.5 flex items-center w-full sm:w-auto max-w-[95vw] relative transition-all shadow-primary/5">
+                            <div className="pointer-events-auto pt-4 pb-4 w-full flex justify-center px-4 max-w-6xl mx-auto">
+                                <div className="bg-background/80 backdrop-blur-xl border border-border/40 shadow-2xl rounded-2xl p-1.5 flex items-center max-w-full relative transition-all shadow-primary/5">
                                     <div className="overflow-x-auto scrollbar-hide flex items-center w-full overscroll-x-contain">
                                         <TabsList className="h-9 bg-transparent border-none flex w-max flex-nowrap shrink-0 gap-1.5 px-0.5 items-center">
                                             {Object.entries(tabDetails).map(([value, { title, icon }]) => (
@@ -847,13 +944,17 @@ export default function CuisinePage() {
                                 {/* NEW: Personalized Recommendations Section */}
                                 <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
                                     <div className="flex items-center justify-between mb-4">
-                                        <div className="space-y-1">
-                                            <h2 className="text-base font-bold flex items-center gap-2">
-                                                <Sparkles className="h-5 w-5 text-primary" />
-                                                Recommandé pour vous
-                                                <Badge variant="outline" className="text-[10px] uppercase tracking-tighter ml-2 bg-primary/10 text-primary border-primary/20">Algorithme MyFlex</Badge>
-                                            </h2>
-                                            <p className="text-xs text-muted-foreground">Inspirations basées sur votre profil ({userProfile?.origin || 'Cuisine variée'}) et vos saveurs préférées.</p>
+                                        <div className="space-y-1.5">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <h2 className="text-base md:text-lg font-bold flex items-center gap-2 shrink-0">
+                                                    <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+                                                    Recommandé pour vous
+                                                </h2>
+                                                <Badge variant="outline" className="text-[8px] md:text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary border-primary/20 whitespace-nowrap shrink-0">
+                                                    Algorithme MyFlex
+                                                </Badge>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">Inspirations basées sur votre profil <span className="font-bold text-foreground">({userProfile?.origin || 'Cuisine variée'})</span> et vos saveurs préférées.</p>
                                         </div>
                                         <Button variant="ghost" size="sm" className="hidden sm:flex text-[10px] uppercase font-bold tracking-widest" onClick={() => window.location.reload()}>
                                             Rafraîchir
@@ -890,7 +991,15 @@ export default function CuisinePage() {
                                                         <Badge variant="outline" className="mb-1.5 w-fit text-[7px] md:text-[8px] bg-primary/20 backdrop-blur border-white/10 text-white font-black uppercase tracking-widest px-1.5 py-0.5 rounded-sm">
                                                             ✨ {dish.matchReason || 'Suggestion MyFlex'}
                                                         </Badge>
-                                                        <h3 className="text-sm md:text-xl font-black text-white uppercase italic leading-tight group-hover:-translate-y-1 transition-transform">{dish.name}</h3>
+                                                        <h3 
+                                                            className="text-sm md:text-xl font-black text-white uppercase italic leading-tight group-hover:-translate-y-1 transition-transform hover:underline underline-offset-4 decoration-primary"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                openDishPreview(dish.name, dish);
+                                                            }}
+                                                        >
+                                                            {dish.name}
+                                                        </h3>
                                                         <div className="mt-1 md:mt-2 flex items-center gap-2 text-[8px] md:text-[9px] font-black text-white/50 uppercase tracking-[0.1em] md:tracking-[0.2em]">
                                                             <div className="flex items-center gap-1">
                                                                 <ClockIcon className="h-2.5 w-2.5 md:h-3 md:w-3" />
@@ -958,7 +1067,13 @@ export default function CuisinePage() {
                                                                 {dish.category}
                                                             </Badge>
                                                         </div>
-                                                        <h4 className="text-sm md:text-xl font-black text-white uppercase italic leading-tight mb-1.5 group-hover:-translate-y-1 transition-transform">
+                                                        <h4 
+                                                            className="text-sm md:text-xl font-black text-white uppercase italic leading-tight mb-1.5 group-hover:-translate-y-1 transition-transform hover:underline underline-offset-4 decoration-primary"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                openDishPreview(dish.name, dish);
+                                                            }}
+                                                        >
                                                             {dish.name}
                                                         </h4>
                                                         <div className="flex items-center gap-2 text-[8px] md:text-[9px] font-black text-white/50 uppercase tracking-widest">
@@ -1010,7 +1125,12 @@ export default function CuisinePage() {
                                                             <X className="h-3 w-3" />
                                                         </Button>
                                                     </div>
-                                                    <CardTitle className="text-sm md:text-lg font-bold truncate mt-0.5">{item.name}</CardTitle>
+                                                    <CardTitle 
+                                                        className="text-sm md:text-lg font-bold truncate mt-0.5 hover:text-primary transition-colors cursor-pointer hover:underline decoration-primary/30"
+                                                        onClick={() => openDishPreview(item.name)}
+                                                    >
+                                                        {item.name}
+                                                    </CardTitle>
                                                 </CardHeader>
                                                 <CardContent className="p-3 md:p-5 pt-1.5 md:pt-2 flex-grow space-y-3">
                                                     <div className="flex items-center gap-1.5 text-[8px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
@@ -1220,6 +1340,11 @@ export default function CuisinePage() {
                                                         <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
                                                             <History className="h-3 w-3" />
                                                             <span>{format(item.plannedFor.toDate(), 'd MMM yyyy', { locale: fr })}</span>
+                                                            {item.isDone ? (
+                                                                <Badge className="bg-emerald-500/10 text-emerald-500 border-none px-1.5 py-0 h-4">Fini</Badge>
+                                                            ) : (
+                                                                <Badge className="bg-destructive/10 text-destructive border-none px-1.5 py-0 h-4">Manqué</Badge>
+                                                            )}
                                                         </div>
                                                         <Button
                                                             variant="outline"
@@ -1275,7 +1400,7 @@ export default function CuisinePage() {
 
                 {/* Dialog: Planifier ou Cuisiner maintenant */}
                 <Dialog open={!!pendingActionItem} onOpenChange={(o) => !o && setPendingActionItem(null)}>
-                    <DialogContent className="max-w-sm w-[95vw] sm:rounded-2xl rounded-3xl border-none bg-background/95 backdrop-blur-xl shadow-2xl p-0 overflow-hidden">
+                    <DialogContent className="max-w-sm w-[95vw] sm:rounded-2xl rounded-2xl border-none bg-background/95 backdrop-blur-xl shadow-2xl p-0 overflow-hidden">
                         <DialogHeader className="sr-only">
                             <DialogTitle>Options de cuisine</DialogTitle>
                             <DialogDescription>Choisissez quand cuisiner ce repas</DialogDescription>

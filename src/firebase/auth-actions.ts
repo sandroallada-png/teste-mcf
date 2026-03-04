@@ -85,35 +85,52 @@ export async function initiateEmailSignIn(authInstance: Auth, email: string, pas
   }
 }
 
-/** Google sign-in with popup + redirect fallback */
+/** Google sign-in — popup sur web, redirect sur Capacitor (in-app, sans Chrome) */
 export async function initiateGoogleSignIn(authInstance: Auth): Promise<void> {
   const provider = new GoogleAuthProvider();
+  provider.addScope('email');
+  provider.addScope('profile');
 
-  try {
-    await signInWithPopup(authInstance, provider);
-  } catch (error: any) {
-    console.error('Google sign-in error:', error);
+  // Détecte si on tourne dans Capacitor (APK natif)
+  const isCapacitor = typeof window !== 'undefined' &&
+    !!(window as any).Capacitor &&
+    (window as any).Capacitor.isNativePlatform?.();
 
-    if (error.code === 'auth/cancelled-popup-request') {
-      throw new Error('Popup cancelled'); // Throw to be caught by the caller
+  if (isCapacitor) {
+    // Sur mobile natif : signInWithRedirect + indexedDB pour la persistance locale
+    // Firebase gère le redirect dans le même WebView sans ouvrir Chrome
+    try {
+      const { indexedDBLocalPersistence, setPersistence } = await import('firebase/auth');
+      await setPersistence(authInstance, indexedDBLocalPersistence);
+      await signInWithRedirect(authInstance, provider);
+      // getRedirectResult est géré dans auth-provider.tsx au montage
+    } catch (error: any) {
+      console.error('Google sign-in redirect error:', error);
+      showError('Erreur Google', 'La connexion Google a échoué. Essayez email/mot de passe.');
+      throw error;
     }
-
-    if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/popup-blocked') {
-      try {
-        await signInWithRedirect(authInstance, provider);
-        // This promise might not resolve in the current page context if redirect is successful
-      } catch (redirectError) {
-        console.error('Google sign-in redirect error:', redirectError);
-        showError('Erreur de Redirection', 'La connexion via redirection a également échoué.');
-        throw redirectError; // Throw to be caught
+  } else {
+    // Sur web desktop : popup classique
+    try {
+      await signInWithPopup(authInstance, provider);
+    } catch (error: any) {
+      console.error('Google sign-in popup error:', error);
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+        // Fallback redirect si popup bloqué
+        try {
+          await signInWithRedirect(authInstance, provider);
+        } catch (redirectError) {
+          showError('Erreur de Redirection', 'Connexion Google impossible.');
+          throw redirectError;
+        }
+      } else if (error.code !== 'auth/cancelled-popup-request') {
+        showError('Erreur de connexion Google', 'Connexion Google impossible. Vérifiez la configuration.');
+        throw error;
       }
-    } else {
-      // Handle other potential errors, like misconfiguration.
-      showError('Erreur de connexion Google', 'Connexion Google impossible. Vérifiez la configuration.');
-      throw error; // Throw to be caught
     }
   }
 }
+
 
 /** Send verification email */
 export function initiateEmailVerification(currentUser: User | null): void {

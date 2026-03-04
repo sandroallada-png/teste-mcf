@@ -86,7 +86,7 @@ export function NotificationBell() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative hidden md:inline-flex">
+        <Button variant="ghost" size="icon" className="relative transition-transform active:scale-95">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <span className="absolute top-1 right-1 flex h-3 w-3">
@@ -124,6 +124,12 @@ export function NotificationBell() {
             </div>
           )}
         </ScrollArea>
+        <DropdownMenuSeparator />
+        <div className="p-2 border-t">
+          <Button variant="ghost" size="sm" className="w-full text-xs font-bold text-primary hover:bg-primary/5 rounded-lg" asChild>
+            <Link href="/notifications">Voir tout l'historique</Link>
+          </Button>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

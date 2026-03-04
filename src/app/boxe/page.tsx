@@ -43,7 +43,7 @@ type BoxMeal = {
     calories: number;
     image: string;
     category: string;
-    type: 'breakfast' | 'lunch' | 'snack' | 'dinner';
+    type: 'breakfast' | 'lunch' | 'dessert' | 'dinner';
     matchReason?: string; // why this dish was chosen
 };
 
@@ -51,12 +51,12 @@ type DayPlan = { day: number; label: string; meals: BoxMeal[] };
 type WeeklyBox = { week: number; title: string; description: string; theme: string; color: string; days: DayPlan[] };
 type PlanEntry = BoxMeal & { dayIndex: number; dayLabel: string; enabled: boolean };
 
-const MEAL_TYPES: BoxMeal['type'][] = ['breakfast', 'lunch', 'snack', 'dinner'];
+const MEAL_TYPES: BoxMeal['type'][] = ['breakfast', 'lunch', 'dessert', 'dinner'];
 
 const mealTypesMeta: Record<string, { label: string; icon: React.ReactNode }> = {
     breakfast: { label: 'Petit-déj', icon: <Coffee className="h-3 w-3" /> },
     lunch: { label: 'Déjeuner', icon: <Sun className="h-3 w-3" /> },
-    snack: { label: 'Goûter', icon: <Apple className="h-3 w-3" /> },
+    dessert: { label: 'Goûter', icon: <Apple className="h-3 w-3" /> },
     dinner: { label: 'Dîner', icon: <Moon className="h-3 w-3" /> },
 };
 

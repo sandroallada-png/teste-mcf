@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { openDishPreview } from '@/components/shared/global-dish-preview';
 
 interface AIAssistantPanelProps {
   isLoadingPlan: boolean;
@@ -35,7 +36,7 @@ export function AIAssistantPanel({
             <Bot className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-sm md:text-base font-black uppercase tracking-widest text-foreground">Assistant Intelligent</h2>
+            <h2 className="text-sm md:text-base font-black uppercase tracking-widest text-foreground">My Flex Coach</h2>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">En ligne • Prêt à vous aider</span>
@@ -105,7 +106,12 @@ export function AIAssistantPanel({
                       )}
                     </div>
                     <div className="flex-1 min-w-0 text-left">
-                      <p className="text-[10px] font-black truncate leading-tight uppercase tracking-tight">{meal.name}</p>
+                      <p 
+                        className="text-[10px] font-black truncate leading-tight uppercase tracking-tight hover:text-primary transition-colors cursor-pointer hover:underline underline-offset-2"
+                        onClick={() => openDishPreview(meal.name, meal)}
+                      >
+                        {meal.name}
+                      </p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-[8px] font-extrabold text-primary uppercase">
                           {({ 'breakfast': 'Petit-déj', 'lunch': 'Déjeuner', 'dinner': 'Dîner', 'dessert': 'Dessert / Collation', 'snack': 'Dessert / Collation' } as Record<string, string>)[meal.type] || meal.type}

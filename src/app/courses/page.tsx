@@ -31,7 +31,7 @@ export default function CoursesPage() {
 
     const { isReadOnly, triggerBlock } = useReadOnly();
     const [isGenerating, setIsGenerating] = useState(false);
-    const [shoppingList, setShoppingList] = useState<GenerateShoppingListOutput | null>(null);
+    const [shoppingList, setShoppingList] = useState<(GenerateShoppingListOutput & { isSaved?: boolean }) | null>(null);
     const [checkedItems, setCheckedItems] = useState<string[]>([]);
     const [generationStep, setGenerationStep] = useState(0);
 
@@ -102,16 +102,8 @@ export default function CoursesPage() {
             });
 
             if (error) throw new Error(error);
-            setShoppingList(list);
-
-            // Save to history
-            if (list && historyCollectionRef) {
-                addDocumentNonBlocking(historyCollectionRef, {
-                    userId: user.uid,
-                    items: list.items,
-                    summary: list.summary,
-                    createdAt: serverTimestamp(),
-                });
+            if (list) {
+                setShoppingList({ items: list.items, summary: list.summary, isSaved: false });
             }
 
             toast({
@@ -178,14 +170,14 @@ export default function CoursesPage() {
                     <Sidebar {...sidebarProps} />
                 </AppSidebar>
                 <SidebarInset>
-                    <div className="flex h-full flex-1 flex-col">
+                    <div className="flex h-full flex-1 flex-col overflow-hidden">
                         <AppHeader
                             title="Courses"
                             icon={<ShoppingCart className="h-4 w-4" />}
                             user={user}
                             sidebarProps={sidebarProps}
                         />
-                        <main className="flex-1 flex flex-col overflow-y-auto bg-background">
+                        <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden bg-background">
                             <div className="max-w-6xl mx-auto w-full px-4 md:px-8 py-6 md:py-10 space-y-8 md:space-y-10">
                                 {/* Header Section */}
                                 <div className="space-y-6">
@@ -215,7 +207,8 @@ export default function CoursesPage() {
                                                         const latest = historyItems[0];
                                                         setShoppingList({
                                                             items: latest.items,
-                                                            summary: latest.summary
+                                                            summary: latest.summary,
+                                                            isSaved: true
                                                         });
                                                     }}
                                                 >
@@ -287,27 +280,29 @@ export default function CoursesPage() {
                                                                         : "bg-background hover:border-primary/30 hover:shadow-md"
                                                                 )}
                                                             >
-                                                                <div className="flex items-center gap-4">
+                                                                <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
                                                                     <div className={cn(
-                                                                        "h-6 w-6 rounded-lg border-2 flex items-center justify-center transition-colors",
+                                                                        "h-6 w-6 shrink-0 rounded-lg border-2 flex items-center justify-center transition-colors",
                                                                         checkedItems.includes(item.name)
                                                                             ? "bg-primary border-primary text-white"
                                                                             : "border-muted group-hover:border-primary/50"
                                                                     )}>
                                                                         {checkedItems.includes(item.name) && <CheckCircle2 className="h-4 w-4" />}
                                                                     </div>
-                                                                    <div className="space-y-0.5">
+                                                                    <div className="space-y-0.5 min-w-0 flex-1">
                                                                         <p className={cn(
-                                                                            "text-sm font-bold",
-                                                                            checkedItems.includes(item.name) && "line-through"
+                                                                            "text-sm font-bold truncate",
+                                                                            checkedItems.includes(item.name) && "line-through text-muted-foreground/70"
                                                                         )}>{item.name}</p>
-                                                                        <p className="text-[10px] text-muted-foreground font-medium">{item.reason}</p>
+                                                                        <p className="text-[10px] text-muted-foreground font-medium line-clamp-2 leading-snug">{item.reason}</p>
                                                                     </div>
                                                                 </div>
                                                                 {item.quantity && (
-                                                                    <Badge variant="outline" className="text-[10px] font-bold px-2 py-0 border-primary/20 text-primary">
-                                                                        {item.quantity}
-                                                                    </Badge>
+                                                                    <div className="shrink-0 w-[4.5rem] md:w-[5.5rem] ml-2 flex items-center justify-end">
+                                                                        <Badge variant="outline" className="w-full h-8 flex items-center justify-center text-[11px] md:text-xs font-black px-1 border-primary/20 text-primary bg-primary/5 rounded-lg overflow-hidden">
+                                                                            <span className="truncate max-w-full text-center leading-none">{item.quantity}</span>
+                                                                        </Badge>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         ))}
@@ -317,11 +312,52 @@ export default function CoursesPage() {
                                         </div>
 
                                         {/* Actions */}
-                                        <div className="flex justify-center pt-10">
-                                            <Button variant="outline" onClick={() => setShoppingList(null)} className="rounded-xl border-dashed">
+                                        <div className="flex justify-center pt-10 gap-4">
+                                            <Button variant="outline" onClick={() => {
+                                                setShoppingList(null);
+                                                setCheckedItems([]);
+                                            }} className="rounded-xl border-dashed">
                                                 <Trash2 className="mr-2 h-4 w-4" />
                                                 Effacer la liste
                                             </Button>
+                                            {shoppingList.isSaved ? (
+                                                <Button 
+                                                    onClick={() => {
+                                                        toast({
+                                                            title: "Course terminée !",
+                                                            description: "Vos achats ont été marqués comme faits. La liste reste dans l'historique."
+                                                        });
+                                                        setShoppingList(null);
+                                                        setCheckedItems([]);
+                                                    }} 
+                                                    className="rounded-xl font-bold px-8 shadow-lg shadow-primary/20 hover:scale-105 transition-all text-white bg-green-500 hover:bg-green-600"
+                                                >
+                                                    <CheckCircle2 className="mr-2 h-5 w-5" />
+                                                    Fin de course
+                                                </Button>
+                                            ) : (
+                                                <Button 
+                                                    onClick={() => {
+                                                        if (historyCollectionRef && user) {
+                                                            addDocumentNonBlocking(historyCollectionRef, {
+                                                                userId: user.uid,
+                                                                items: shoppingList.items,
+                                                                summary: shoppingList.summary,
+                                                                createdAt: serverTimestamp(),
+                                                            });
+                                                        }
+                                                        toast({
+                                                            title: "Course enregistrée !",
+                                                            description: "Votre sélection a été sauvegardée dans l'historique."
+                                                        });
+                                                        setShoppingList(prev => prev ? { ...prev, isSaved: true } : null);
+                                                    }} 
+                                                    className="rounded-xl font-bold px-8 shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+                                                >
+                                                    <CheckCircle2 className="mr-2 h-5 w-5" />
+                                                    Enregistrer la course
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -337,7 +373,8 @@ export default function CoursesPage() {
                                                 <Card key={item.id} className="hover:border-primary/30 transition-all cursor-pointer group" onClick={() => {
                                                     setShoppingList({
                                                         items: item.items,
-                                                        summary: item.summary
+                                                        summary: item.summary,
+                                                        isSaved: true
                                                     });
                                                 }}>
                                                     <CardHeader className="p-4">

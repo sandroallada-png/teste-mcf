@@ -102,31 +102,33 @@ export default function DashboardPage() {
 
   const effectiveChefId = userProfile?.chefId || user?.uid;
 
+  const currentDayStr = currentTime.toISOString().split('T')[0];
+
   // --- Meals Data ---
   // This query specifically fetches meals for the current day for the main panel
   const todaysMealsQuery = useMemoFirebase(() => {
     if (!effectiveChefId) return null;
-    const todayStart = startOfDay(new Date());
-    const todayEnd = endOfDay(new Date());
+    const todayStart = startOfDay(currentTime);
+    const todayEnd = endOfDay(currentTime);
     return query(
       collection(firestore, 'users', effectiveChefId, 'foodLogs'),
       where('date', '>=', Timestamp.fromDate(todayStart)),
       where('date', '<=', Timestamp.fromDate(todayEnd))
     );
-  }, [effectiveChefId, firestore]);
+  }, [effectiveChefId, firestore, currentDayStr]);
   const { data: todaysMeals, isLoading: isLoadingTodaysMeals } = useCollection<Meal>(todaysMealsQuery);
 
   // This query fetches scheduled meals for today
   const scheduledMealsQuery = useMemoFirebase(() => {
     if (!effectiveChefId) return null;
-    const todayStart = startOfDay(new Date());
-    const todayEnd = endOfDay(new Date());
+    const todayStart = startOfDay(currentTime);
+    const todayEnd = endOfDay(currentTime);
     return query(
       collection(firestore, 'users', effectiveChefId, 'cooking'),
       where('plannedFor', '>=', Timestamp.fromDate(todayStart)),
       where('plannedFor', '<=', Timestamp.fromDate(todayEnd))
     );
-  }, [effectiveChefId, firestore]);
+  }, [effectiveChefId, firestore, currentDayStr]);
   const { data: scheduledMeals, isLoading: isLoadingScheduledMeals } = useCollection<Cooking>(scheduledMealsQuery);
 
   // This query fetches all meals, which is needed for the sidebar context (AI tips)
@@ -351,26 +353,26 @@ export default function DashboardPage() {
         }
       }
 
-      const userProfileRef = doc(firestore, 'users', effectiveChefId!);
-      const mealsCollectionRef = collection(firestore, 'users', effectiveChefId!, 'foodLogs');
-      addDocumentNonBlocking(mealsCollectionRef, fullMealData);
-
-      xpGained = 15; // Fixed XP for adding a meal
-      const userDoc = await getDoc(userProfileRef);
-      const currentXp = userDoc.data()?.xp ?? 0;
-      const newXp = currentXp + xpGained;
-      const newLevel = Math.floor(newXp / XP_PER_LEVEL) + 1;
-
-      await updateDoc(userProfileRef, {
-        xp: increment(xpGained),
-        level: newLevel
+      const cookingCollectionRef = collection(firestore, 'users', effectiveChefId!, 'cooking');
+      addDocumentNonBlocking(cookingCollectionRef, {
+        userId: user?.uid,
+        name: meal.name,
+        calories: calories,
+        cookingTime: '30 min',
+        type: meal.type,
+        recipe: '',
+        imageHint: meal.name,
+        imageUrl: meal.imageUrl || '',
+        createdAt: Timestamp.now(),
+        plannedFor: Timestamp.now(),
+        isDone: false
       });
 
-      toast({ title: 'Repas ajouté !', description: `${meal.name} (${calories} kcal) a été enregistré. +${xpGained} XP !` });
+      toast({ title: 'Repas ajouté en cuisine !', description: `${meal.name} (${calories} kcal) a été envoyé en cuisine.` });
       setFormOpen(false);
 
     } catch (e) {
-      toast({ variant: "destructive", title: "Erreur", description: "Impossible d'ajouter le repas." });
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible d'ajouter le repas en cuisine." });
     } finally {
       setIsAddingMeal(false);
     }
@@ -521,15 +523,19 @@ export default function DashboardPage() {
 
       const currentUser = user;
       dayPlan.forEach(meal => {
-        const newMealRef = doc(mealsCollectionRef);
-        batch.set(newMealRef, {
+        const newCookingRef = doc(cookingCollectionRef);
+        batch.set(newCookingRef, {
           userId: currentUser.uid,
           name: meal.name,
-          calories: meal.calories,
+          calories: meal.calories || 0,
+          cookingTime: '30 min',
           type: meal.type,
-          cookedBy: meal.cookedBy || '',
+          recipe: '',
+          imageHint: meal.name,
           imageUrl: meal.imageUrl || '',
-          date: today,
+          createdAt: today,
+          plannedFor: today,
+          isDone: false
         });
       });
 
@@ -567,7 +573,7 @@ export default function DashboardPage() {
       });
     });
 
-    return Array.from(mealMap.values()) as (Meal & { isScheduled: boolean })[];
+    return (Array.from(mealMap.values()) as (Meal & { isScheduled: boolean })[]).filter(m => ['breakfast', 'lunch', 'dinner', 'dessert'].includes(m.type as string));
   }, [todaysMeals, scheduledMeals, dishImageMap]);
 
   const handleReplaceWithAlternative = async (alternativeName: string) => {
@@ -782,7 +788,7 @@ export default function DashboardPage() {
 
               <motion.div
                 layoutId="magic-btn"
-                className="relative z-10 w-[88vw] max-w-sm bg-background rounded-3xl shadow-2xl shadow-primary/30 border border-primary/20 overflow-hidden"
+                className="relative z-10 w-[88vw] max-w-sm bg-background rounded-2xl shadow-2xl shadow-primary/30 border border-primary/20 overflow-hidden"
                 style={{ originX: 0.5, originY: 1 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               >

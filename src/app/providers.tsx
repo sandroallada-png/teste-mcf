@@ -13,6 +13,10 @@ import { ReadOnlyProvider } from '@/contexts/read-only-context';
 import { FamilyMemberGuardModal } from '@/components/shared/family-member-guard';
 import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
 import { AnimatePresence } from 'framer-motion';
+import { GlobalDishPreview } from '@/components/shared/global-dish-preview';
+import { GoogleTranslateProvider } from '@/components/shared/google-translate';
+import { OfflineDetector } from '@/components/shared/offline-detector';
+import { NativeSplashScreen } from '@/components/shared/native-splash';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -28,14 +32,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <AuthProvider>
               <ReadOnlyProvider>
                 <AnimatePresence mode="wait">
-                  {children}
+                  <GoogleTranslateProvider>
+                    {children}
+                  </GoogleTranslateProvider>
                 </AnimatePresence>
                 <FamilyMemberGuardModal />
                 <FeedbackButton />
                 <FloatingShortcuts />
                 <LoadingOverlay />
                 <MobileBottomNav />
+                <GlobalDishPreview />
                 <Toaster />
+                <OfflineDetector />
+                <NativeSplashScreen />
               </ReadOnlyProvider>
             </AuthProvider>
           </LoadingProvider>

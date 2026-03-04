@@ -1,13 +1,15 @@
 
 'use client';
 
-import React from 'react';
-import { Calendar, PlusCircle, Coffee, UtensilsCrossed, Moon, Apple, IceCream, Trash2, CookingPot } from 'lucide-react';
+import React, { useEffect, useRef, useMemo } from 'react';
+import { Calendar, PlusCircle, Coffee, UtensilsCrossed, Moon, Apple, IceCream, Trash2, CookingPot, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import type { MealType } from '@/lib/types';
+import { openDishPreview } from '@/components/shared/global-dish-preview';
+import { useToast } from '@/hooks/use-toast';
 
 interface FoodJournalProps {
   mealTypes: string[];
@@ -31,6 +33,42 @@ export function FoodJournal({
   removeMeal
 }: FoodJournalProps) {
   const router = useRouter();
+  const { toast } = useToast();
+  const notifiedMealsRef = useRef<Set<string>>(new Set());
+
+  const thresholds: Record<string, number> = useMemo(() => ({
+    breakfast: 8.5, // 08:30
+    lunch: 11.5, // 11:30
+    dessert: 16.0, // 16:00
+    dinner: 19.5, // 19:30
+  }), []);
+
+  const currentHourMin = currentTime.getHours() + currentTime.getMinutes() / 60;
+
+  useEffect(() => {
+    displayMeals.forEach(meal => {
+      if (meal.isScheduled && !meal.isDone) {
+        const threshold = thresholds[meal.type as string];
+        if (threshold !== undefined && currentHourMin >= threshold) {
+          const mealKey = `${meal.id}-${meal.type}-late`;
+          if (!notifiedMealsRef.current.has(mealKey)) {
+            notifiedMealsRef.current.add(mealKey);
+            toast({
+              title: 'Céline (L\'IA) - A table !',
+              description: `Avez-vous oublié de cuisiner votre ${mealTypeDetails[meal.type]?.translation.toLowerCase()} ("${meal.name}") ?`,
+              variant: 'default',
+            });
+          }
+        }
+      }
+    });
+  }, [currentHourMin, displayMeals, thresholds, mealTypeDetails, toast]);
+
+  const isMealLate = (meal: any) => {
+    if (!meal.isScheduled || meal.isDone) return false;
+    const threshold = thresholds[meal.type as string];
+    return threshold !== undefined && currentHourMin >= threshold;
+  };
 
   return (
     <div className="lg:col-span-7 border border-border rounded-xl p-3 md:p-5 bg-card shadow-sm space-y-4 md:space-y-6">
@@ -72,10 +110,15 @@ export function FoodJournal({
               )}>
                 {mealsForType.length > 0 ? (
                   <div className="space-y-3">
-                    {mealsForType.map(meal => (
+                    {mealsForType.map(meal => {
+                      const late = isMealLate(meal);
+                      return (
                       <div
                         key={meal.id}
-                        className="group/item flex items-center justify-between p-2 md:p-2.5 rounded-xl hover:bg-accent/5 transition-all cursor-pointer border border-transparent hover:border-border/50"
+                        className={cn(
+                          "group/item flex items-center justify-between p-2 md:p-2.5 rounded-xl transition-all cursor-pointer border",
+                          late ? "border-red-500/20 bg-red-500/5 hover:bg-red-500/10 hover:border-red-500/30" : "border-transparent hover:border-border/50 hover:bg-accent/5"
+                        )}
                         onClick={() => setSuggestionMeal(meal)}
                       >
                         <div className="flex items-center gap-3 min-w-0">
@@ -95,23 +138,36 @@ export function FoodJournal({
                             )}
                           </div>
                           <div className="min-w-0">
-                            <h4 className="text-sm font-black text-foreground truncate">{meal.name}</h4>
+                            <h4 
+                              className="text-sm font-black text-foreground truncate hover:text-primary transition-colors hover:underline underline-offset-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openDishPreview(meal.name);
+                              }}
+                            >
+                              {meal.name}
+                            </h4>
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-bold text-muted-foreground">{meal.calories} kcal</span>
-                              {meal.isScheduled && (
-                                <div className="flex items-center gap-1.5">
-                                  <Badge variant="secondary" className="text-[7px] font-black uppercase px-1 py-0 bg-primary/10 text-primary border-none">Prévu</Badge>
-                                  <div 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      router.push('/cuisine');
-                                    }}
-                                    className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-all cursor-pointer"
-                                  >
-                                    <CookingPot className="h-3.5 w-3.5 text-primary" />
-                                  </div>
+                              <div className="flex items-center gap-1.5">
+                                {meal.isScheduled && (
+                                  <Badge variant="secondary" className={cn("text-[7px] font-black uppercase px-1 py-0 border-none", late ? "bg-red-500/20 text-red-500" : "bg-primary/10 text-primary")}>Prévu</Badge>
+                                )}
+                                {late && (
+                                  <Badge variant="outline" className="text-[7px] font-black uppercase px-1 py-0 text-red-500 border-red-500/30 flex items-center gap-1">
+                                    <AlertCircle className="h-2 w-2" /> En retard
+                                  </Badge>
+                                )}
+                                <div 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push('/cuisine');
+                                  }}
+                                  className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-all cursor-pointer"
+                                >
+                                  <CookingPot className="h-3.5 w-3.5 text-primary" />
                                 </div>
-                              )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -125,7 +181,8 @@ export function FoodJournal({
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 ) : (
                   <button

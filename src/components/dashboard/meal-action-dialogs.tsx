@@ -31,7 +31,7 @@ export function MealActionDialogs({
     <>
       <Dialog open={!!selectedMealForAction} onOpenChange={(open) => !open && setSelectedMealForAction(null)}>
         <DialogContent
-          className="sm:max-w-[400px] rounded-3xl p-6 overflow-hidden border-primary/20 bg-background/95 backdrop-blur-xl shadow-2xl shadow-primary/20"
+          className="sm:max-w-[400px] rounded-2xl p-6 overflow-hidden border-primary/20 bg-background/95 backdrop-blur-xl shadow-2xl shadow-primary/20"
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
@@ -71,7 +71,7 @@ export function MealActionDialogs({
               </div>
               <div className="flex flex-col">
                 <span className="font-black text-sm uppercase tracking-tight">Mettre en attente</span>
-                <span className="text-[10px] text-muted-foreground font-bold group-hover/btn2:text-primary/70 transition-colors">Envoyer vers la zone (Frigo / Cuisine)</span>
+                <span className="text-[10px] text-muted-foreground font-bold group-hover/btn2:text-primary/70 transition-colors">Envoyer vers la zone (Cuisine)</span>
               </div>
             </Button>
           </div>

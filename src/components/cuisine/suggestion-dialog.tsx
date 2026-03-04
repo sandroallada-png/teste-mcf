@@ -65,9 +65,17 @@ export function SuggestionDialog({
   useEffect(() => {
     if (isOpen && suggestion) {
       setLocalSuggestion(suggestion);
-      // Auto-set slot based on suggestion type if available
-      if (suggestion.type) {
-        setSelectedSlot(suggestion.type as any);
+      
+      const suggestedMoment = (suggestion as any).momentSuggest;
+      if (suggestedMoment && ['breakfast', 'lunch', 'dinner', 'dessert'].includes(suggestedMoment)) {
+        setSelectedSlot(suggestedMoment as any);
+      } else if (suggestedMoment === 'snack') {
+        setSelectedSlot('dessert');
+      } else {
+        const hour = new Date().getHours();
+        if (hour < 10) setSelectedSlot('breakfast');
+        else if (hour < 14) setSelectedSlot('lunch');
+        else setSelectedSlot('dinner');
       }
     }
   }, [suggestion, isOpen]);
@@ -291,7 +299,7 @@ export function SuggestionDialog({
 
       {/* Conflict Dialog */}
       <Dialog open={!!conflictMeal} onOpenChange={() => setConflictMeal(null)}>
-        <DialogContent className="max-w-md rounded-3xl border-none p-6 text-center space-y-4">
+        <DialogContent className="max-w-md rounded-2xl border-none p-6 text-center space-y-4">
           <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-2">
             <Info className="h-8 w-8 text-amber-500" />
           </div>

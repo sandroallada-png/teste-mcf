@@ -161,7 +161,7 @@ export function SuggestionsDialog({
 
           <div className="px-6 pb-8 -mt-16 relative z-10">
             {/* Meal Preview Card */}
-            <div className="bg-card border border-border/50 rounded-3xl p-5 shadow-xl flex items-center gap-5 transition-all hover:shadow-2xl hover:border-primary/20 group">
+            <div className="bg-card border border-border/50 rounded-2xl p-5 shadow-xl flex items-center gap-5 transition-all hover:shadow-2xl hover:border-primary/20 group">
               <div
                 className={cn(
                   "h-24 w-24 rounded-2xl overflow-hidden bg-muted border-2 border-background shadow-lg shrink-0 transition-transform active:scale-95",
@@ -287,8 +287,8 @@ export function SuggestionsDialog({
                   </div>
                 </ScrollArea>
               ) : (
-                <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-muted bg-muted/10 p-10 text-center space-y-4">
-                  <div className="h-16 w-16 items-center justify-center rounded-3xl bg-primary/5 flex">
+                <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-muted bg-muted/10 p-10 text-center space-y-4">
+                  <div className="h-16 w-16 items-center justify-center rounded-2xl bg-primary/5 flex">
                     <Lightbulb className="h-8 w-8 text-primary opacity-40" />
                   </div>
                   <div className="space-y-1">

@@ -52,12 +52,12 @@ export function StatCards({
     },
     {
       label: 'REPAS',
-      value: displayMeals.length,
+      value: displayMeals.filter(m => !m.isScheduled).length,
       unit: `/ ${userProfile?.targetMeals || 4}`,
       icon: UtensilsCrossed,
       color: 'text-blue-500',
       bg: 'bg-blue-500/10',
-      progress: (displayMeals.length / (userProfile?.targetMeals || 4)) * 100
+      progress: (displayMeals.filter(m => !m.isScheduled).length / (userProfile?.targetMeals || 4)) * 100
     },
     {
       label: 'OBJECTIF',
@@ -76,7 +76,7 @@ export function StatCards({
         if (uniqueCooks.length === 1) return uniqueCooks[0];
         return 'Plusieurs';
       })(),
-      unit: 'Aujourd\'hui',
+      unit: '',
       icon: Award,
       color: 'text-purple-500',
       bg: 'bg-purple-500/10',
@@ -184,9 +184,9 @@ export function StatCards({
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-lg md:text-2xl font-black tracking-tight">{stat.value}</span>
-                  <span className="text-[10px] md:text-xs font-bold text-muted-foreground uppercase">{stat.unit}</span>
+                <div className="flex items-baseline gap-1 w-full truncate">
+                  <span className="text-lg md:text-2xl font-black tracking-tight truncate">{stat.value}</span>
+                  {stat.unit && <span className="text-[10px] md:text-xs font-bold text-muted-foreground uppercase shrink-0">{stat.unit}</span>}
                 </div>
                 <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground truncate">{stat.label}</p>
                 {stat.description && <p className="text-[8px] font-medium text-emerald-500/70 border-t border-emerald-500/10 mt-1 pt-1">{stat.description}</p>}

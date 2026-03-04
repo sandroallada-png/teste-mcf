@@ -5,9 +5,8 @@ const config: CapacitorConfig = {
   appName: 'My Cook Flex',
   webDir: 'dist',
   server: {
-    // Replace with your production URL or use a local IP for development
-    url: 'https://studio-901067780-579dd.web.app',
-    cleartext: true
+    androidScheme: 'https',
+    cleartext: false
   },
   android: {
     buildOptions: {
@@ -15,6 +14,14 @@ const config: CapacitorConfig = {
       keystorePassword: undefined,
       keystoreAlias: undefined,
       keystoreAliasPassword: undefined,
+    }
+  },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 0,
+      launchAutoHide: true,
+      backgroundColor: "#000000",
+      showSpinner: false,
     }
   }
 };

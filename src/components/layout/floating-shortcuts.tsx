@@ -39,7 +39,6 @@ export function FloatingShortcuts() {
 
     // Handle Dragging
     const hasMoved = React.useRef(false);
-    const [isOverDragTrash, setIsOverDragTrash] = useState(false);
     const isOverTrashRef = React.useRef(false);
 
     useEffect(() => {
@@ -47,11 +46,15 @@ export function FloatingShortcuts() {
     }, []);
 
     useEffect(() => {
-        if (!mounted || isRegistrationPath) return; // Hook logic skip
+        if (!mounted || isRegistrationPath) return;
         if (isOpen) {
             const views = parseInt(localStorage.getItem('mcf-floating-tutorial-views') || '0', 10);
             if (views < 3) {
-                const timer = setTimeout(() => setShowTutorial(true), 500);
+                const timer = setTimeout(() => {
+                    setShowTutorial(true);
+                    // Increment count as soon as it's shown to be strict about the "3 times" rule
+                    localStorage.setItem('mcf-floating-tutorial-views', (views + 1).toString());
+                }, 500);
                 return () => clearTimeout(timer);
             }
         } else {
@@ -62,8 +65,6 @@ export function FloatingShortcuts() {
     const dismissTutorial = (e?: React.MouseEvent) => {
         e?.stopPropagation();
         setShowTutorial(false);
-        const currentViews = parseInt(localStorage.getItem('mcf-floating-tutorial-views') || '0', 10);
-        localStorage.setItem('mcf-floating-tutorial-views', (currentViews + 1).toString());
     };
 
     const handleNavigation = (path: string) => {
@@ -155,7 +156,6 @@ export function FloatingShortcuts() {
 
                 if (isOver !== isOverTrashRef.current) {
                     isOverTrashRef.current = isOver;
-                    setIsOverDragTrash(isOver);
                     if (cardRef.current) cardRef.current.style.opacity = isOver ? '0.5' : '1';
                 }
             }
@@ -169,7 +169,6 @@ export function FloatingShortcuts() {
 
             if (isOverTrashRef.current) {
                 setIsOpen(false);
-                setIsOverDragTrash(false);
                 isOverTrashRef.current = false;
                 setPosition(null);
             } else if (lastPositionRef.current) {
@@ -237,28 +236,6 @@ export function FloatingShortcuts() {
 
     return createPortal(
         <>
-            <div
-                className={cn(
-                    "fixed top-12 left-1/2 -translate-x-1/2 z-[10000] transition-all duration-300 pointer-events-none flex flex-col items-center justify-center gap-2",
-                    isDragging ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10",
-                    isOverDragTrash && "scale-125"
-                )}
-            >
-                <div className={cn(
-                    "h-16 w-16 rounded-full flex items-center justify-center shadow-lg transition-colors duration-300 backdrop-blur-sm border-2",
-                    isOverDragTrash
-                        ? "bg-destructive/90 border-destructive text-white shadow-destructive/50"
-                        : "bg-background/80 border-muted-foreground/20 text-muted-foreground"
-                )}>
-                    <X className={cn("h-8 w-8", isOverDragTrash && "animate-pulse")} />
-                </div>
-                <span className={cn(
-                    "text-xs font-bold px-2 py-1 rounded bg-background/80",
-                    isOverDragTrash ? "text-destructive" : "text-muted-foreground"
-                )}>
-                    Fermer
-                </span>
-            </div>
 
             {!isOpen && (
                 <div
@@ -434,15 +411,6 @@ export function FloatingShortcuts() {
                                 </motion.div>
                             ) : (
                                 <div className="flex flex-col gap-4 items-center py-2">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-10 w-10 rounded-full bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-300 hover:scale-110 transition-transform shadow-sm"
-                                        onClick={() => handleNavigation('/cuisine')}
-                                        title="Cuisine"
-                                    >
-                                        <Sparkles className="h-5 w-5" />
-                                    </Button>
 
                                     <Button
                                         variant="ghost"

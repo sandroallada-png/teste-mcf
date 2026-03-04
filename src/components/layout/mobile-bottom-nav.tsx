@@ -125,7 +125,7 @@ export function MobileBottomNav() {
         { href: '/dashboard', icon: LayoutDashboard, label: 'Accueil' },
         { href: '/calendar', icon: Calendar, label: 'Agenda' },
         { href: '/cuisine', icon: ChefHat, label: 'Cuisine' },
-        { href: '/my-flex-ai', icon: Bot, label: 'Assistant' },
+        { href: '/my-flex-ai', icon: Bot, label: 'Coach' },
     ];
     const leftItems = navItems.slice(0, 2);
     const rightItems = navItems.slice(2);
@@ -227,7 +227,7 @@ export function MobileBottomNav() {
 
                         {/* Card */}
                         <motion.div
-                            className="relative z-10 w-[88vw] max-w-sm bg-background rounded-3xl shadow-2xl shadow-primary/30 border border-primary/20 overflow-hidden"
+                            className="relative z-10 w-[88vw] max-w-sm bg-background rounded-2xl shadow-2xl shadow-primary/30 border border-primary/20 overflow-hidden"
                             initial={{ scale: 0.85, y: 40, opacity: 0 }}
                             animate={{ scale: 1, y: 0, opacity: 1 }}
                             exit={{ scale: 0.85, y: 40, opacity: 0 }}

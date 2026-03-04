@@ -180,9 +180,9 @@ export default function CalendarPage() {
         }
     };
 
-    const isLoading = isUserLoading || isLoadingProfile || isLoadingAllMeals || isLoadingGoals || isLoadingDailyLogs || isLoadingDailyPlanned || !user;
+    const isGlobalLoading = isUserLoading || isLoadingProfile || isLoadingAllMeals || isLoadingGoals || !user;
 
-    if (isLoading) {
+    if (isGlobalLoading) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-background">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />

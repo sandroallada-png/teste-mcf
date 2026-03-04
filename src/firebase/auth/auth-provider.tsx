@@ -1,7 +1,7 @@
 
 'use client';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, getRedirectResult, User } from 'firebase/auth';
 import { auth } from '@/firebase/auth';
 import { usePathname, useRouter } from 'next/navigation';
 import { useLoading } from '@/contexts/loading-context';
@@ -38,6 +38,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const ADMIN_EMAIL = 'emapms@gmail.com';
 
   useEffect(() => {
+    // Récupérer le résultat du redirect Google (Capacitor natif)
+    getRedirectResult(auth).catch((err) => {
+      console.warn('getRedirectResult error (ignoré):', err?.code);
+    });
+
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       setLoading(false);

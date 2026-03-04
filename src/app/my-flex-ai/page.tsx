@@ -97,7 +97,7 @@ export default function MyFlexAIPage() {
         <SidebarInset className="bg-background flex flex-col min-h-0 flex-1">
           {/* Header fixe */}
           <AppHeader
-            title="My Flex AI"
+            title="My Flex Coach"
             icon={<Bot className="h-6 w-6" />}
             user={user}
             sidebarProps={sidebarProps}
@@ -121,7 +121,7 @@ export default function MyFlexAIPage() {
                     <p className="text-[10px] font-black uppercase tracking-widest text-primary">
                       Intelligence Artificielle
                     </p>
-                    <h2 className="text-lg font-black tracking-tight">Conseiller Personnel</h2>
+                    <h2 className="text-lg font-black tracking-tight">My Flex Coach</h2>
                   </div>
                 </div>
 
