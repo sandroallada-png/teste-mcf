@@ -23,7 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { getInviteAction } from '../../actions';
+import { getInviteAction } from '@/app/actions';
 
 export default function JoinFamilyPage() {
     const { inviteId } = useParams();
