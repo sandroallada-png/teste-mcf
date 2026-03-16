@@ -133,10 +133,19 @@ export function ChatInterface({ conversationId, setConversationId }: ChatInterfa
     const viewportRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (viewportRef.current) {
-            viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
-        }
-    }, [messages]);
+        const scrollToBottom = () => {
+            if (scrollAreaRef.current) {
+                scrollAreaRef.current.scrollTo({ 
+                    top: scrollAreaRef.current.scrollHeight, 
+                    behavior: 'smooth' 
+                });
+            }
+        };
+
+        scrollToBottom();
+        const timer = setTimeout(scrollToBottom, 100);
+        return () => clearTimeout(timer);
+    }, [messages, isLoading]);
 
     const handleSaveConversation = async (newMessages: Message[]) => {
         if (!user || !firestore) return;
