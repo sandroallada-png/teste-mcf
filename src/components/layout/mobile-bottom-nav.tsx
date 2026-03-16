@@ -123,8 +123,8 @@ export function MobileBottomNav() {
 
     const navItems = [
         { href: '/dashboard', icon: LayoutDashboard, label: 'Accueil' },
-        { href: '/calendar', icon: Library, label: 'Calendrier' },
-        { href: '/atelier', icon: Calendar, label: 'Atelier' },
+        { href: '/calendar', icon: Calendar, label: 'Calendrier' },
+        { href: '/atelier', icon: Library, label: 'Atelier' },
         { href: '/my-flex-ai', icon: Bot, label: 'Coach' },
     ];
     const leftItems = navItems.slice(0, 2);
@@ -135,76 +135,84 @@ export function MobileBottomNav() {
             {/* ── NAV BAR ─────────────────────────────────────────────────── */}
             <div className="md:hidden fixed bottom-0 inset-x-0 z-[40] bg-background/85 backdrop-blur-xl border-t border-border shadow-[0_-4px_24px_rgba(0,0,0,0.10)]">
                 <div
-                    className="flex items-end justify-around px-1 pt-1"
-                    style={{ paddingBottom: 'max(1.1rem, env(safe-area-inset-bottom))' }}
+                    className="flex items-center justify-between px-2"
+                    style={{ paddingBottom: 'max(0.8rem, env(safe-area-inset-bottom))' }}
                 >
-                    {leftItems.map(item => {
-                        const isActive = pathname === item.href;
-                        return (
-                            <motion.button
-                                key={item.href}
-                                className={cn(
-                                    "flex flex-col items-center gap-0.5 py-2 px-3 rounded-xl transition-all relative",
-                                    isActive ? "text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
-                                )}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => router.push(item.href)}
-                            >
-                                <item.icon className={cn("h-[22px] w-[22px]", isActive && "animate-in fade-in zoom-in duration-300")} />
-                                <span className="text-[9px] font-black tracking-wide uppercase">{item.label}</span>
-                                {isActive && (
-                                    <motion.span
-                                        layoutId="nav-pill"
-                                        className="absolute bottom-1 h-0.5 w-4 bg-primary rounded-full"
-                                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                                    />
-                                )}
-                            </motion.button>
-                        );
-                    })}
+                    {/* Items Gauche */}
+                    <div className="flex flex-1 justify-around items-center">
+                        {leftItems.map(item => {
+                            const isActive = pathname === item.href;
+                            return (
+                                <motion.button
+                                    key={item.href}
+                                    className={cn(
+                                        "flex flex-col items-center gap-1 py-2 px-2 rounded-xl transition-all relative min-w-[64px]",
+                                        isActive ? "text-primary" : "text-muted-foreground"
+                                    )}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => router.push(item.href)}
+                                >
+                                    <item.icon className={cn("h-[22px] w-[22px]", isActive && "animate-in fade-in zoom-in duration-300")} />
+                                    <span className="text-[9px] font-black tracking-wide uppercase">{item.label}</span>
+                                    {isActive && (
+                                        <motion.span
+                                            layoutId="nav-pill"
+                                            className="absolute bottom-0.5 h-0.5 w-4 bg-primary rounded-full"
+                                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                        />
+                                    )}
+                                </motion.button>
+                            );
+                        })}
+                    </div>
 
-                    {/* Center: Magic button */}
-                    <div className="relative flex flex-col items-center" style={{ marginTop: '-26px' }}>
+                    {/* Centre: Bouton Magie */}
+                    <div className="relative flex flex-col items-center px-2" style={{ marginTop: '-32px' }}>
+                        <div className="absolute -top-1 inset-x-0 h-2 bg-background/20 blur-md rounded-full -z-10" />
                         <motion.button
                             ref={scope}
                             onClick={handleMagicPress}
-                            className="h-16 w-16 rounded-full bg-primary shadow-2xl shadow-primary/40 border-4 border-background flex items-center justify-center active:scale-95 group"
+                            className="h-16 w-16 rounded-full bg-primary shadow-[0_8px_32px_rgba(var(--primary-rgb),0.4)] border-4 border-background flex items-center justify-center group relative overflow-hidden"
                             whileTap={{ scale: 0.92 }}
                         >
-                            <Sparkles className="h-7 w-7 text-primary-foreground group-hover:rotate-12 transition-transform duration-300" />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <Sparkles className="h-7 w-7 text-primary-foreground group-hover:rotate-12 transition-transform duration-300 relative z-10" />
                         </motion.button>
                         <span className={cn(
-                            "text-[9px] font-black uppercase tracking-widest mt-1 transition-colors",
-                            isAIPage ? "text-muted-foreground" : "text-primary"
+                            "text-[9px] font-black uppercase tracking-widest mt-1.5 transition-colors",
+                            isAIPage ? "text-muted-foreground" : "text-primary drop-shadow-sm font-black"
                         )}>
                             Magie
                         </span>
                     </div>
 
-                    {rightItems.map(item => {
-                        const isActive = pathname === item.href;
-                        return (
-                            <motion.button
-                                key={item.href}
-                                className={cn(
-                                    "flex flex-col items-center gap-0.5 py-2 px-3 rounded-xl transition-all relative",
-                                    isActive ? "text-primary" : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
-                                )}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => router.push(item.href)}
-                            >
-                                <item.icon className={cn("h-[22px] w-[22px]", isActive && "animate-in fade-in zoom-in duration-300")} />
-                                <span className="text-[9px] font-black tracking-wide uppercase">{item.label}</span>
-                                {isActive && (
-                                    <motion.span
-                                        layoutId="nav-pill"
-                                        className="absolute bottom-1 h-0.5 w-4 bg-primary rounded-full"
-                                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                                    />
-                                )}
-                            </motion.button>
-                        );
-                    })}
+                    {/* Items Droite */}
+                    <div className="flex flex-1 justify-around items-center">
+                        {rightItems.map(item => {
+                            const isActive = pathname === item.href;
+                            return (
+                                <motion.button
+                                    key={item.href}
+                                    className={cn(
+                                        "flex flex-col items-center gap-1 py-2 px-2 rounded-xl transition-all relative min-w-[64px]",
+                                        isActive ? "text-primary" : "text-muted-foreground"
+                                    )}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => router.push(item.href)}
+                                >
+                                    <item.icon className={cn("h-[22px] w-[22px]", isActive && "animate-in fade-in zoom-in duration-300")} />
+                                    <span className="text-[9px] font-black tracking-wide uppercase">{item.label}</span>
+                                    {isActive && (
+                                        <motion.span
+                                            layoutId="nav-pill"
+                                            className="absolute bottom-0.5 h-0.5 w-4 bg-primary rounded-full"
+                                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                        />
+                                    )}
+                                </motion.button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 
