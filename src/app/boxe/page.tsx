@@ -585,7 +585,7 @@ export default function BoxPage() {
                                                                 className="object-cover transition-transform duration-700 group-hover:scale-105"
                                                                 sizes="(max-width: 768px) 50vw, 25vw"
                                                             />
-                                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                                            <div className="absolute inset-0 bg-black/25 md:bg-black/0 md:group-hover:bg-black/25 transition-colors flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 pointer-events-none md:pointer-events-auto">
                                                                 <ZoomIn className="h-7 w-7 text-white drop-shadow-lg" />
                                                             </div>
                                                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3">

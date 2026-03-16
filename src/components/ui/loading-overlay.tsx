@@ -2,9 +2,7 @@
 'use client';
 
 import { useLoading } from '@/contexts/loading-context';
-import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Logo, LogoIcon } from '../icons';
 
 export function LoadingOverlay() {
   const { isLoading, loadingMessage } = useLoading();
@@ -16,8 +14,12 @@ export function LoadingOverlay() {
       <div className="flex flex-col items-center gap-6 p-12 text-center">
         <div className="relative">
           <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150 animate-pulse" />
-          <div className="relative w-24 h-24 bg-white rounded-3xl shadow-2xl flex items-center justify-center animate-bounce duration-[2s]">
-            <LogoIcon className="w-16 h-16" />
+          <div className="relative w-24 h-24 bg-white rounded-3xl shadow-2xl flex items-center justify-center animate-bounce duration-[2s] overflow-hidden">
+            <img 
+              src="/new-logo/logo-annimate.png" 
+              alt="Chargement..." 
+              className="w-16 h-16 object-contain"
+            />
           </div>
         </div>
         <div className="space-y-2">

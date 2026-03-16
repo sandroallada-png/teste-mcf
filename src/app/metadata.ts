@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 const siteUrl = 'https://www.mycookflex.com';
 const siteTitle = 'My Cook Flex : Votre Plan de Repas Intelligent & Coach Nutritionnel IA';
 const siteDescription = "Générez des plans de repas adaptés à vos objectifs (perte de poids, prise de masse...), créez des listes de courses automatiques et discutez avec notre IA pour des conseils nutritionnels sur mesure. Simplifiez votre alimentation dès aujourd'hui.";
-const siteImage = `${siteUrl}/mcf-logo.png`; // Assurez-vous que cette image existe dans /public
+const siteImage = `${siteUrl}/new-logo/logo-favicon.png`; // Assurez-vous que cette image existe dans /public
 
 export const AppMetadata: Metadata = {
   title: siteTitle,

@@ -1,12 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw, X } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
 export function OfflineDetector() {
     const [isOnline, setIsOnline] = useState(true);
     const [wasOffline, setWasOffline] = useState(false);
     const [showRestored, setShowRestored] = useState(false);
+    const [isDismissed, setIsDismissed] = useState(false);
+    
+    // Safety check for SSR
+    const isNative = typeof window !== 'undefined' ? Capacitor.isNativePlatform() : false;
 
     useEffect(() => {
         // État initial
@@ -20,6 +25,7 @@ export function OfflineDetector() {
 
         const handleOnline = () => {
             setIsOnline(true);
+            setIsDismissed(false);
             if (wasOffline) {
                 setShowRestored(true);
                 // Cacher le message "connexion rétablie" après 3 secondes
@@ -57,6 +63,16 @@ export function OfflineDetector() {
     }
 
     // Bannière "Hors ligne" persistante
+    if (!isOnline && isDismissed) {
+        return (
+            <div className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none animate-in slide-in-from-top-4 fade-in duration-300">
+                <div className="bg-orange-500/90 backdrop-blur-md text-white/90 text-[10px] font-black uppercase tracking-widest text-center py-1.5 shadow-md border-b border-orange-400/20">
+                    Mode Hors Ligne (Lecture Seule)
+                </div>
+            </div>
+        );
+    }
+
     return (
         <>
             {/* Overlay semi-transparent */}
@@ -66,6 +82,14 @@ export function OfflineDetector() {
             <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6">
                 <div className="w-full max-w-sm animate-in zoom-in-95 fade-in duration-300">
                     <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#0d0d0d] shadow-2xl p-8 text-center space-y-6">
+                        {isNative && (
+                            <button 
+                                onClick={() => setIsDismissed(true)}
+                                className="absolute top-4 right-4 z-20 h-8 w-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
                         
                         {/* Glow décoratif */}
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-32 bg-orange-500/10 blur-3xl rounded-full pointer-events-none" />

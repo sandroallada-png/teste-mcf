@@ -238,7 +238,7 @@ export default function PreferencesPage() {
                       p-4 rounded-2xl border-2 text-left transition-all duration-300 group relative overflow-hidden
                       ${mainObjective === objective
                                                 ? 'border-primary bg-primary/5 shadow-lg shadow-primary/5'
-                                                : 'border-muted bg-background hover:border-primary/40'}
+                                                : 'border-muted bg-background md:hover:border-primary/40'}
                     `}
                                     >
                                         <p className={`text-xs font-bold leading-snug ${mainObjective === objective ? 'text-primary' : 'text-muted-foreground'}`}>
@@ -254,7 +254,7 @@ export default function PreferencesPage() {
 
                         {/* AI Preferences Card */}
                         <div className="bg-primary/[0.02] border-2 border-primary/10 rounded-[2rem] md:rounded-[2.5rem] p-5 md:p-8 space-y-8 md:space-y-10 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-1000" />
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl -mr-16 -mt-16 md:group-hover:scale-150 transition-transform duration-1000" />
 
                             <div className="relative z-10 space-y-8">
                                 <div className="flex items-center gap-4">
@@ -319,7 +319,7 @@ export default function PreferencesPage() {
 
                     <div className="space-y-4 pt-4">
                         <Button onClick={handleFinish} className="w-full h-16 text-lg font-black shadow-2xl shadow-primary/30 rounded-2xl group relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full md:group-hover:translate-x-full transition-transform duration-1000" />
                             Finaliser & Découvrir
                             <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-2 transition-transform" />
                         </Button>

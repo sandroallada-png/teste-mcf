@@ -85,7 +85,7 @@ export async function initiateEmailSignIn(authInstance: Auth, email: string, pas
   }
 }
 
-/** Google sign-in — popup sur web, redirect sur Capacitor (in-app, sans Chrome) */
+/** Google sign-in — plugin natif sur Capacitor, popup sur web */
 export async function initiateGoogleSignIn(authInstance: Auth): Promise<void> {
   const provider = new GoogleAuthProvider();
   provider.addScope('email');
@@ -97,16 +97,29 @@ export async function initiateGoogleSignIn(authInstance: Auth): Promise<void> {
     (window as any).Capacitor.isNativePlatform?.();
 
   if (isCapacitor) {
-    // Sur mobile natif : signInWithRedirect + indexedDB pour la persistance locale
-    // Firebase gère le redirect dans le même WebView sans ouvrir Chrome
     try {
-      const { indexedDBLocalPersistence, setPersistence } = await import('firebase/auth');
-      await setPersistence(authInstance, indexedDBLocalPersistence);
-      await signInWithRedirect(authInstance, provider);
-      // getRedirectResult est géré dans auth-provider.tsx au montage
+      // 1. Appelle la boîte de dialogue Google Android native (fluide, pas de Chrome)
+      const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+      const { signInWithCredential } = await import('firebase/auth');
+
+      const result = await FirebaseAuthentication.signInWithGoogle();
+
+      // 2. Si le token est reçu, on certifie l'app auprès de Firebase
+      if (result.credential?.idToken) {
+        const credential = GoogleAuthProvider.credential(result.credential.idToken);
+        await signInWithCredential(authInstance, credential);
+      } else {
+        throw new Error('Aucun jeton Google reçu');
+      }
     } catch (error: any) {
-      console.error('Google sign-in redirect error:', error);
-      showError('Erreur Google', 'La connexion Google a échoué. Essayez email/mot de passe.');
+      console.error('Google sign-in (Capacitor) native error:', error);
+      
+      if (error.code === 'Sign in action cancelled' || error.message?.includes('cancelled')) {
+         // L'utilisateur a simplement fermé la fenêtre native sans se connecter
+         return; 
+      }
+      
+      showError('Connexion impossible', 'La connexion Google native a échoué. Utilisez email/mot de passe.');
       throw error;
     }
   } else {
@@ -130,6 +143,7 @@ export async function initiateGoogleSignIn(authInstance: Auth): Promise<void> {
     }
   }
 }
+
 
 
 /** Send verification email */

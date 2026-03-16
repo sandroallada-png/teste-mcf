@@ -1,7 +1,8 @@
 
 'use client';
 
-import React, { createContext, useState, useContext, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 interface LoadingContextType {
   isLoading: boolean;
@@ -16,6 +17,13 @@ const LoadingContext = createContext<LoadingContextType | undefined>(undefined);
 export function LoadingProvider({ children }: { children: ReactNode }) {
   const [loadingCount, setLoadingCount] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
+  const pathname = usePathname();
+
+  // Reset loading when page actually changes
+  useEffect(() => {
+    setLoadingCount(0);
+    setLoadingMessage(null);
+  }, [pathname]);
 
   const showLoading = useCallback((message: string = "Chargement...") => {
     setLoadingCount(prev => {

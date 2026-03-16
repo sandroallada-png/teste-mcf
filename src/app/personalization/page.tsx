@@ -201,7 +201,7 @@ export default function PersonalizationPage() {
               className="w-full h-18 py-8 text-xl font-black shadow-2xl shadow-primary/30 rounded-[2rem] group relative overflow-hidden"
               style={{ backgroundColor: `hsl(${theme.hsl})` }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full md:group-hover:translate-x-full transition-transform duration-1000" />
               Valider ce style
               <ArrowRight className="ml-3 h-6 w-6 group-hover:translate-x-2 transition-transform" />
             </Button>

@@ -217,6 +217,6 @@ ${appDocumentation}
   } catch (error) {
     console.error('Error calling OpenRouter API:', error);
     // In case of error, return a user-friendly message in French.
-    return "Désolé, je rencontre un problème technique pour vous répondre. Veuillez réessayer plus tard.";
+    return "Désolé, je rencontre un problème de communication avec mon intelligence (OpenRouter). Veuillez vérifier ma connexion ou réessayer dans quelques instants.";
   }
 }

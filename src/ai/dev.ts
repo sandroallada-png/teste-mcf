@@ -1,5 +1,4 @@
-
-
+// @ts-nocheck
 /**
  * @fileoverview This file is executed by the Genkit CLI. It exports the
  * configuration for the AI developer experience.

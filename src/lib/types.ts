@@ -91,6 +91,7 @@ export const UserProfileSchema = z.object({
   referralSource: z.string().optional(),
   theme: z.string().optional(),
   phoneNumber: z.string().optional(),
+  isFloatingShortcutsEnabled: z.boolean().optional().default(true),
 });
 export type UserProfile = z.infer<typeof UserProfileSchema>;
 

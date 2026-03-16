@@ -131,6 +131,46 @@ export default function CalendarPage() {
         }, {} as Record<string, Meal[]>);
     }, [allMeals]);
 
+    // --- Global Query for all planned meals (to highlight in calendar) ---
+    const allPlannedGlobalQuery = useMemoFirebase(() => {
+        if (!effectiveChefId) return null;
+        return query(
+            collection(firestore, 'users', effectiveChefId, 'cooking'),
+            orderBy('plannedFor', 'desc')
+        );
+    }, [effectiveChefId, firestore]);
+    const { data: allPlannedGlobal } = useCollection<Cooking>(allPlannedGlobalQuery);
+
+    const plannedDates = useMemo(() => {
+        if (!allPlannedGlobal) return [];
+        return allPlannedGlobal
+            .filter(p => p.isDone === false)
+            .map(p => startOfDay(p.plannedFor.toDate()));
+    }, [allPlannedGlobal]);
+
+    const modifiers = {
+        hasPlanned: plannedDates.filter(d => (!isPast(d) || isToday(d))),
+        missed: (date: Date) => {
+            if (!isPast(date) || isToday(date)) return false;
+            const dateStr = format(date, 'yyyy-MM-dd');
+            return allPlannedGlobal?.some(p => !p.isDone && format(p.plannedFor.toDate(), 'yyyy-MM-dd') === dateStr) || false;
+        },
+        pastDone: (date: Date) => {
+            if (!isPast(date) || isToday(date)) return false;
+            const dateStr = format(date, 'yyyy-MM-dd');
+            // Soit il y a un plat 'done' dans cooking, soit il y a un log dans allMeals
+            const hasDoneCooking = allPlannedGlobal?.some(p => p.isDone && format(p.plannedFor.toDate(), 'yyyy-MM-dd') === dateStr);
+            const hasMealLog = allMeals?.some(m => format(m.date.toDate(), 'yyyy-MM-dd') === dateStr);
+            return Boolean((hasDoneCooking || hasMealLog) && !allPlannedGlobal?.some(p => !p.isDone && format(p.plannedFor.toDate(), 'yyyy-MM-dd') === dateStr));
+        }
+    };
+
+    const modifiersClassNames = {
+        hasPlanned: "!bg-emerald-500/15 !text-emerald-600 !font-black !border-2 !border-emerald-500/20",
+        missed: "!bg-red-500/15 !text-red-600 !font-black !border-2 !border-red-500/20",
+        pastDone: "!bg-muted !text-muted-foreground !font-black border border-border grayscale opacity-60",
+    };
+
 
     useEffect(() => {
         if (goalsData) {
@@ -261,6 +301,8 @@ export default function CalendarPage() {
                                                         onSelect={setDate}
                                                         className="w-full"
                                                         locale={fr}
+                                                        modifiers={modifiers}
+                                                        modifiersClassNames={modifiersClassNames}
                                                     />
                                                 </div>
                                             </Card>

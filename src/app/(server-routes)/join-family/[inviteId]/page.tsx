@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
-import { doc, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, Timestamp, collection } from 'firebase/firestore';
 import {
     createUserWithEmailAndPassword,
     updateProfile,
@@ -103,6 +103,22 @@ export default function JoinFamilyPage() {
                 await setDoc(userDocRef, userProfile);
             }
             await updateDoc(doc(firestore, 'invites', invite.id), { status: 'accepted' });
+
+            // Notification for the chef
+            try {
+                const notifRef = doc(collection(firestore, 'users', invite.chefId, 'notifications'));
+                await setDoc(notifRef, {
+                    id: notifRef.id,
+                    title: 'Nouveau membre !',
+                    body: `${name} a rejoint votre famille via votre lien.`,
+                    link: '/foyer-control',
+                    isRead: false,
+                    createdAt: Timestamp.now(),
+                });
+            } catch (err) {
+                console.error("Failed to notify chef:", err);
+            }
+
             toast({ title: "Bienvenue dans la famille !", description: `Vous avez rejoint le foyer de ${invite.chefName}.` });
             router.push('/dashboard');
         } catch (error: any) {

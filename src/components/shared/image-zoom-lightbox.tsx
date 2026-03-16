@@ -18,8 +18,11 @@ export function ImageZoomLightbox({ isOpen, imageUrl, onClose }: ImageZoomLightb
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-3xl p-4 md:p-12 cursor-zoom-out"
-                    onClick={onClose}
+                    className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-3xl p-4 md:p-12 cursor-zoom-out pointer-events-auto"
+                    onPointerDownCapture={(e) => {
+                        e.stopPropagation();
+                        onClose();
+                    }}
                 >
                     {/* Decorative Background Elements for Premium Feel */}
                     <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -31,13 +34,13 @@ export function ImageZoomLightbox({ isOpen, imageUrl, onClose }: ImageZoomLightb
                     <motion.button
                         initial={{ scale: 0.5, opacity: 0, y: 10 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
-                        className="absolute top-8 right-8 z-[10000] h-12 w-12 rounded-2xl bg-white/5 hover:bg-white/10 transition-all border border-white/10 hover:border-white/20 flex items-center justify-center text-white backdrop-blur-2xl group"
-                        onClick={(e) => {
+                        className="absolute top-8 right-8 z-[100000] h-12 w-12 rounded-2xl bg-white/5 hover:bg-white/10 transition-all border border-white/10 hover:border-white/20 flex items-center justify-center text-white backdrop-blur-2xl group"
+                        onPointerDownCapture={(e) => {
                             e.stopPropagation();
                             onClose();
                         }}
                     >
-                        <X className="h-6 w-6 group-hover:rotate-90 transition-transform duration-300" />
+                        <X className="h-6 w-6 group-hover:rotate-90 transition-transform duration-300 pointer-events-none" />
                     </motion.button>
 
                     {/* Image Container with Elegant Shadow & Border */}

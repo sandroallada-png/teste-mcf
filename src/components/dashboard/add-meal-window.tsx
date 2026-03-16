@@ -43,7 +43,7 @@ import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 // Schema for the form
 const mealFormSchema = z.object({
     name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères.'),
-    type: z.enum(['breakfast', 'lunch', 'dinner', 'dessert']),
+    type: z.enum(['breakfast', 'lunch', 'dinner', 'dessert', 'snack']),
     cookedBy: z.string().optional(),
     date: z.date().optional(),
     calories: z.number().optional(),
@@ -743,7 +743,8 @@ export function AddMealWindow({ isOpen, onClose, onSubmit, household = [], userI
                                                     <SelectItem value="breakfast">Petit-déjeuner</SelectItem>
                                                     <SelectItem value="lunch">Déjeuner</SelectItem>
                                                     <SelectItem value="dinner">Dîner</SelectItem>
-                                                    <SelectItem value="dessert">Dessert / Collation</SelectItem>
+                                                    <SelectItem value="dessert">Dessert</SelectItem>
+                                                    <SelectItem value="snack">Collation / Snack</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />

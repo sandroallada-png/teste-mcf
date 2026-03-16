@@ -42,6 +42,22 @@ service cloud.firestore {
       allow list: if true;
     }
 
+    match /meals/{mealId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /meals {
+      allow list: if true;
+    }
+
+    match /ingredients/{ingredientId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /ingredients {
+      allow list: if true;
+    }
+
     match /promotions/{promotionId} {
       allow read: if true;
       allow write: if isAdmin();

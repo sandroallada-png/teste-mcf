@@ -130,6 +130,8 @@ export default function LoginPage() {
       await initiateGoogleSignIn(auth);
     } catch (error) {
       console.error("Google sign in failed:", error);
+    } finally {
+      // Toujours masquer le loading, que la connexion réussisse ou échoue
       hideLoading();
     }
   };
@@ -272,7 +274,7 @@ export default function LoginPage() {
                   className="w-full h-14 text-base font-bold border-2 hover:bg-muted relative overflow-hidden group transition-all hover:scale-[1.02] active:scale-95"
                   onClick={handleGoogleSignIn}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-red-500/5 to-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-red-500/5 to-yellow-500/5 opacity-40 md:opacity-0 md:group-hover:opacity-100 transition-opacity" />
                   <GoogleIcon className="mr-3 h-5 w-5" />
                   Continuer avec Google
                 </Button>
@@ -283,7 +285,7 @@ export default function LoginPage() {
                 variant="outline"
                 className="w-full h-16 text-lg font-black shadow-2xl shadow-primary/30 rounded-2xl group relative overflow-hidden text-primary border-2 border-primary/20 bg-primary/5 hover:bg-primary hover:!text-white transition-all duration-300"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full md:group-hover:translate-x-full transition-transform duration-1000" />
                 <span className="relative z-10 flex items-center justify-center">
                   {loginMode === 'email' ? 'Se connecter' : 'Accéder au foyer'}
                   <ArrowLeft className="ml-3 h-5 w-5 rotate-180 group-hover:translate-x-2 transition-transform" />

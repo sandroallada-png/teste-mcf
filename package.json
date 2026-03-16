@@ -11,7 +11,9 @@
     "build:native": "node scripts/prepare-native.js && next build && node scripts/restore-native.js"
   },
   "dependencies": {
+    "@capacitor-firebase/authentication": "^8.1.0",
     "@capacitor/android": "^8.1.0",
+    "@capacitor/app": "^8.0.1",
     "@capacitor/cli": "^8.1.0",
     "@capacitor/core": "^8.1.0",
     "@capacitor/ios": "^8.1.0",
@@ -42,6 +44,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
+    "dexie": "^4.3.0",
+    "dexie-react-hooks": "^4.2.0",
     "dotenv": "^16.5.0",
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",

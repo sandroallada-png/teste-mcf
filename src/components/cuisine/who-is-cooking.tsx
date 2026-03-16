@@ -37,6 +37,7 @@ import { Calendar } from '../ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
 import { fr } from 'date-fns/locale';
+import { useReadOnly } from '@/contexts/read-only-context';
 
 
 type TimeSlot = 'breakfast' | 'lunch' | 'dinner' | 'morning-lunch' | 'morning-dinner' | 'lunch-dinner' | 'all-day';
@@ -62,6 +63,7 @@ export function WhoIsCooking() {
     const { user } = useUser();
     const { firestore } = useFirebase();
     const { toast } = useToast();
+    const { isReadOnly, guardAction, triggerBlock } = useReadOnly();
 
     const userProfileRef = useMemoFirebase(() => (user ? doc(firestore, 'users', user.uid) : null), [user, firestore]);
     const { data: userProfile, isLoading: isLoadingProfile } = useDoc<UserProfile>(userProfileRef);
@@ -138,6 +140,7 @@ export function WhoIsCooking() {
     }, [user, effectiveChefId, firestore]);
 
     const handleOpenAssignDialog = (cookName: string) => {
+        if (isReadOnly) { triggerBlock(); return; }
         setSelectedCook(cookName);
         setSelectedDate(new Date()); // Reset to today
         setSelectedTimeSlot('dinner'); // Reset to default
@@ -151,7 +154,7 @@ export function WhoIsCooking() {
         setIsConfirmDialogOpen(true);
     };
 
-    const handleSetCook = async () => {
+    const handleSetCook = guardAction(async () => {
         if (!user || !pendingAssignment) return;
         const { cookName, date, timeSlot } = pendingAssignment;
 
@@ -221,7 +224,7 @@ export function WhoIsCooking() {
             setIsUpdating(false);
             setPendingAssignment(null);
         }
-    };
+    });
 
     const isLoading = isLoadingProfile || isUpdating || isLoadingCooks;
     const mealTypeTranslations: Record<MealType, string> = {

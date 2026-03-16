@@ -1,12 +1,12 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.mycookflex.app',
+  appId: 'my.cook.flex',
   appName: 'My Cook Flex',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
-    cleartext: false
+    cleartext: true
   },
   android: {
     buildOptions: {
@@ -20,8 +20,12 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 0,
       launchAutoHide: true,
-      backgroundColor: "#000000",
+      backgroundColor: "#0a0a0a",
       showSpinner: false,
+    },
+    FirebaseAuthentication: {
+      skipNativeAuth: false,
+      providers: ["google.com"],
     }
   }
 };

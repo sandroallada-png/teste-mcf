@@ -324,7 +324,7 @@ export default function AtelierPage() {
             <AppSidebar collapsible="icon" className="peer hidden md:block [&>div:last-child]:border-r-0 dark:[&_[data-sidebar=sidebar]]:bg-[#0d0d0d] shadow-none transition-all duration-300" variant="sidebar">
                 <Sidebar {...sidebarProps} />
             </AppSidebar>
-            <SidebarInset className="bg-background flex flex-col h-screen">
+            <SidebarInset className="bg-background flex flex-col min-h-svh w-full overflow-x-hidden">
                 <AppHeader
                     title="Atelier culinaire"
                     icon={<Library className="h-4 w-4" />}
@@ -334,38 +334,41 @@ export default function AtelierPage() {
                 />
                 <main className="flex-1 w-full pb-32 md:pb-20">
                     {/* Hero Section - Premium Chef Style (Locked to dark theme) */}
-                    <div className="relative w-full overflow-hidden bg-[#0d0d0d] pt-6 md:pt-10 pb-8 md:pb-12 px-4 md:px-6">
-                        {/* Radial Glow */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,_rgba(168,124,64,0.15)_0%,_transparent_70%)] pointer-events-none" />
+                    <div className="relative w-full overflow-hidden bg-[#0d0d0d] pt-10 md:pt-16 pb-12 md:pb-20 px-4 md:px-8 border-b border-white/5">
+                        {/* Radial Glow optimized */}
+                        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,_rgba(168,124,64,0.15)_0%,_transparent_50%)] pointer-events-none" />
+                        <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_80%_80%,_rgba(168,124,64,0.1)_0%,_transparent_50%)] pointer-events-none" />
 
-                        <div className="w-full relative z-10 space-y-6 md:space-y-8">
-                            <div className="space-y-3 md:space-y-4 text-center md:text-left">
-                                <div className="flex items-center justify-center md:justify-start gap-2 mb-2 text-amber-500/90 tracking-[0.3em] font-black text-[9px] md:text-[11px] uppercase">
-                                    <span>✦</span>
-                                    <span>Atelier de chef</span>
-                                    <span>✦</span>
+                        <div className="max-w-6xl mx-auto relative z-10">
+                            <div className="flex flex-col space-y-8 md:space-y-12">
+                                <div className="space-y-3 text-center md:text-left">
+                                    <div className="flex items-center justify-center md:justify-start gap-2 mb-1 text-amber-500/80 tracking-[0.2em] md:tracking-[0.3em] font-black text-[8px] md:text-[12px] uppercase">
+                                        <Sparkles className="h-3 w-3 shrink-0" />
+                                        <span className="truncate">Atelier culinaire</span>
+                                        <Sparkles className="h-3 w-3 shrink-0" />
+                                    </div>
+                                    <h1 className="text-2xl sm:text-4xl md:text-7xl font-black text-white tracking-tight leading-[1.1] md:leading-[0.9] uppercase break-words">
+                                        Devenez un <br className="hidden md:block" />
+                                        <span className="italic font-serif text-amber-500/90 font-medium lowercase">vrai chef</span>
+                                    </h1>
+
+                                    <p className="text-white/40 text-[9px] md:text-xl font-bold uppercase tracking-widest md:tracking-[0.3em] max-w-full md:max-w-xl mx-auto md:mx-0">
+                                        Techniques pro & Secrets exclusifs
+                                    </p>
                                 </div>
-                                <h1 className="text-3xl md:text-6xl font-black text-white tracking-tight leading-[0.9] uppercase group">
-                                    Cuisinez comme <br className="hidden md:block" />
-                                    un <span className="italic font-serif text-amber-500/90 font-medium lowercase">vrai chef</span>
-                                </h1>
 
-                                <p className="text-white/50 text-[10px] md:text-base font-black uppercase tracking-[0.2em] md:tracking-[0.4em]">
-                                    Techniques pro, recettes exclusives
-                                </p>
-                            </div>
-
-                            {/* Search Bar - Integrated */}
-                            <div className="w-full relative group">
-                                <Input
-                                    type="text"
-                                    placeholder="Chercher une recette..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="h-14 md:h-16 pl-6 pr-14 rounded-[1.5rem] bg-[#1a1814] border-white/5 text-white text-xs md:text-sm font-medium placeholder:text-white/20 focus:bg-[#221f1a] transition-all focus:ring-1 focus:ring-amber-500/30"
-                                />
-                                <div className="absolute right-6 top-1/2 -translate-y-1/2">
-                                    <Search className="h-5 w-5 text-white/20 group-focus-within:text-amber-500 transition-colors" />
+                                {/* Search Bar - Responsive Fix */}
+                                <div className="w-full max-w-2xl relative group mx-auto md:mx-0">
+                                    <Input
+                                        type="text"
+                                        placeholder="Recette, ingrédient..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="h-11 md:h-20 pl-4 md:pl-10 pr-10 md:pr-20 rounded-md md:rounded-[2rem] bg-white/5 border-white/10 text-white text-[10px] md:text-lg focus:bg-white/10 transition-all focus:ring-1 md:focus:ring-2 focus:ring-amber-500/30 placeholder:text-white/20 w-full"
+                                    />
+                                    <div className="absolute right-3 md:right-10 top-1/2 -translate-y-1/2">
+                                        <Search className="h-4 w-4 md:h-7 md:w-7 text-white/30 group-focus-within:text-amber-500 transition-colors" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -374,13 +377,13 @@ export default function AtelierPage() {
                     {/* Content Area */}
                     <div className="w-full px-4 md:px-6 space-y-8 md:space-y-12 mt-4 md:mt-6">
                         {/* Categories Filter - Pill Style */}
-                        <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none">
+                        <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-hide px-1 -mx-1 snap-x select-none">
                             {[
                                 { id: 'all', label: 'Tout' },
-                                { id: 'favorites', label: 'Mes Favoris' },
+                                { id: 'favorites', label: 'Favoris' },
                                 { id: 'entrée', label: 'Entrées' },
                                 { id: 'plat', label: 'Plats' },
-                                { id: 'dessert', label: 'Desserts / Collations' },
+                                { id: 'dessert', label: 'Desserts' },
                                 { id: 'technique', label: 'Techniques' },
                             ].map((cat) => (
                                 <Button
@@ -389,9 +392,9 @@ export default function AtelierPage() {
                                     size="sm"
                                     onClick={() => setSelectedCategory(cat.id)}
                                     className={cn(
-                                        "h-9 px-6 rounded-full font-black text-[10px] uppercase tracking-widest transition-all shrink-0 border border-border/40",
+                                        "h-9 px-5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all shrink-0 border border-border/40 snap-start",
                                         selectedCategory === cat.id
-                                            ? "bg-primary text-white shadow-lg shadow-primary/20"
+                                            ? "bg-primary text-white shadow-lg shadow-primary/20 border-primary"
                                             : "bg-muted/50 text-muted-foreground hover:bg-muted"
                                     )}
                                 >
@@ -410,59 +413,42 @@ export default function AtelierPage() {
                             </div>
 
                             <Carousel opts={{ align: "start", loop: true }} className="w-full">
-                                <CarouselContent className="-ml-4">
+                                <CarouselContent className="-ml-3 md:-ml-4">
                                     {books?.slice(0, 3).map((book, idx) => (
-                                        <CarouselItem key={book.id} className="pl-4 basis-full md:basis-[85%] lg:basis-[49%]">
+                                        <CarouselItem key={book.id} className="pl-3 md:pl-4 basis-[85%] sm:basis-[80%] lg:basis-[48%]">
                                             <div
-                                                className="flex flex-row h-[180px] md:h-[240px] w-full rounded-xl md:rounded-2xl overflow-hidden cursor-pointer shadow-md border border-border bg-card transition-all hover:shadow-xl group"
+                                                className="flex flex-row min-h-[120px] md:min-h-[240px] w-full rounded-xl md:rounded-2xl overflow-hidden cursor-pointer shadow-md border border-border bg-card transition-all hover:shadow-xl group"
                                                 onClick={() => handleShowRecipe(book)}
                                             >
-                                                {/* Left Side: Illustration Area - Adapts to dark mode */}
-                                                <div className="w-[30%] md:w-[40%] bg-secondary/30 flex items-center justify-center relative p-4 md:p-6 shrink-0 border-r border-border/50">
-                                                    <div className="relative w-full h-full transform transition-all duration-700 group-hover:scale-110 group-hover:-rotate-3 shadow-[0_15px_35px_rgba(0,0,0,0.3)] rounded-xl overflow-hidden ring-1 ring-white/10">
+                                                {/* Left Side: Illustration Area */}
+                                                <div className="w-[35%] md:w-[40%] bg-secondary/30 flex items-center justify-center relative p-1.5 md:p-6 shrink-0 border-r border-border/50">
+                                                    <div className="relative w-full h-[85%] md:h-full transform transition-all duration-700 group-hover:scale-110 group-hover:-rotate-2 shadow-lg rounded-lg md:rounded-xl overflow-hidden">
                                                         <Image
                                                             src={book.imageUrl}
                                                             alt={book.name}
                                                             fill
                                                             className="object-cover"
-                                                            sizes="(max-width: 768px) 30vw, 20vw"
+                                                            sizes="(max-width: 768px) 35vw, 20vw"
                                                         />
-                                                        {/* Book Spine Effect */}
-                                                        <div className="absolute inset-y-0 left-0 w-2 md:w-3 bg-gradient-to-r from-black/20 to-transparent z-10" />
-                                                        <div className="absolute inset-y-0 left-[1px] w-[1px] bg-white/20 z-10" />
                                                     </div>
                                                 </div>
-
+ 
                                                 {/* Right Side: Content Area */}
-                                                <div className="flex-1 bg-card p-4 md:p-8 flex flex-col justify-center relative">
-                                                    <div className="space-y-3 md:space-y-5">
-                                                        <div className="flex items-center gap-2">
-                                                            <Badge className="bg-[#b03d33] hover:bg-[#b03d33] text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded-full border-none">
-                                                                NOUVEAU
-                                                            </Badge>
-                                                        </div>
-
-                                                        <div className="space-y-1">
-                                                            <p className="text-amber-600 dark:text-amber-500/80 text-[10px] md:text-xs font-black uppercase tracking-[0.2em]">
-                                                                {(book as any).category || (idx % 2 === 0 ? 'DESSERT' : 'PLAT PRINCIPAL')}
-                                                            </p>
-                                                            <h3 className="text-xl md:text-4xl font-black text-foreground font-serif leading-tight">
+                                                <div className="flex-1 bg-card p-1.5 md:p-8 flex flex-col justify-center relative min-w-0">
+                                                    <div className="space-y-0.5 md:space-y-4">
+                                                        <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-500 border-none text-[4px] md:text-[10px] font-black uppercase tracking-widest px-1 py-0.5 rounded-full w-fit">
+                                                            {book.category || 'CHEF'}
+                                                        </Badge>
+ 
+                                                        <div className="space-y-0.5 min-w-0 text-left">
+                                                            <h3 className="text-[9px] md:text-4xl font-black text-foreground font-serif leading-tight line-clamp-2 md:line-clamp-none">
                                                                 {book.name}
                                                             </h3>
                                                         </div>
-
-                                                        <div className="flex items-center justify-between mt-auto">
-                                                            <div className="flex items-center gap-2 text-muted-foreground text-[10px] md:text-sm font-bold">
-                                                                <ClockIcon className="h-4 w-4 opacity-50" />
-                                                                <span>{(book as any).cookingTime || '45 min'}</span>
-                                                            </div>
-
-                                                            {/* Pagination dots mock */}
-                                                            <div className="flex items-center gap-1.5">
-                                                                <div className={cn("h-2 w-2 rounded-full transition-colors", idx === 0 ? "bg-amber-500" : "bg-muted")} />
-                                                                <div className={cn("h-2 w-2 rounded-full transition-colors", idx === 1 ? "bg-amber-500" : "bg-muted")} />
-                                                                <div className={cn("h-2 w-2 rounded-full transition-colors", idx === 2 ? "bg-amber-500" : "bg-muted")} />
-                                                            </div>
+ 
+                                                        <div className="flex items-center gap-1 text-muted-foreground text-[6px] md:text-sm font-bold mt-1">
+                                                            <ClockIcon className="h-1.5 w-1.5 md:h-4 md:w-4" />
+                                                            <span>{(book as any).cookingTime || '45 min'}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -475,18 +461,18 @@ export default function AtelierPage() {
 
                         <Tabs defaultValue="chef_recipes" className="w-full space-y-6 md:space-y-10">
                             <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-border/30 pb-4">
-                                <TabsList className="h-14 w-full md:w-auto p-1.5 bg-muted/20 backdrop-blur-md rounded-xl border border-border/40 justify-start md:justify-center overflow-x-auto scrollbar-none">
-                                    <TabsTrigger value="chef_recipes" className="flex-1 md:flex-none px-6 md:px-10 rounded-lg font-black text-[10px] uppercase tracking-normal md:tracking-[0.2em] data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg transition-all whitespace-nowrap">
-                                        Galerie du Chef
+                                <TabsList className="h-12 w-full md:w-auto p-1 bg-muted/20 backdrop-blur-md rounded-xl border border-border/40 flex">
+                                    <TabsTrigger value="chef_recipes" className="flex-1 md:flex-none px-4 md:px-10 rounded-lg font-black text-[10px] uppercase tracking-normal md:tracking-[0.2em] data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg transition-all">
+                                        Galerie
                                     </TabsTrigger>
-                                    <TabsTrigger value="my_recipes" className="flex-1 md:flex-none px-6 md:px-10 rounded-lg font-black text-[10px] uppercase tracking-normal md:tracking-[0.2em] data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg transition-all whitespace-nowrap">
-                                        Mon Grimoire
+                                    <TabsTrigger value="my_recipes" className="flex-1 md:flex-none px-4 md:px-10 rounded-lg font-black text-[10px] uppercase tracking-normal md:tracking-[0.2em] data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-lg transition-all">
+                                        Grimoire
                                     </TabsTrigger>
                                 </TabsList>
                             </div>
 
                             <TabsContent value="my_recipes" className="mt-0 focus-visible:ring-0 outline-none w-full">
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-3 md:gap-4 w-full">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 w-full">
                                     {isLoadingUserCooking ? (
                                         Array.from({ length: 3 }).map((_, i) => (
                                             <div key={i} className="aspect-[16/10] w-full bg-muted/50 rounded-lg animate-pulse border border-border/50" />
@@ -508,27 +494,23 @@ export default function AtelierPage() {
                                                     <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent group-hover:via-black/40 transition-all duration-500" />
                                                 </div>
 
-                                                <CardContent className="relative z-10 h-full flex flex-col justify-end p-2 md:p-4">
-                                                    <div className="space-y-0.5 md:space-y-1 transform transition-transform duration-500 group-hover:-translate-y-1">
-                                                        <Badge className="bg-primary/20 backdrop-blur-sm text-white border-white/10 text-[4px] md:text-[6px] font-black uppercase tracking-tighter md:tracking-widest px-1 py-0 md:px-1.5 md:py-0.5 rounded-sm w-fit">
+                                                <CardContent className="relative z-10 h-full flex flex-col justify-end p-4">
+                                                    <div className="space-y-1 transform transition-transform duration-500 group-hover:-translate-y-1">
+                                                        <Badge className="bg-primary/20 backdrop-blur-sm text-white border-white/10 text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm w-fit">
                                                             {item.type || 'Création'}
                                                         </Badge>
-                                                        <CardTitle className="text-[7px] md:text-sm font-black text-white tracking-tight leading-tight uppercase italic font-serif truncate">
+                                                        <CardTitle className="text-xs md:text-sm font-black text-white tracking-tight leading-tight uppercase italic font-serif truncate">
                                                             {item.name}
                                                         </CardTitle>
-                                                        <div className="flex items-center gap-1.5 md:gap-2 text-white/60 text-[5px] md:text-[7px] font-black uppercase tracking-tighter md:tracking-widest">
-                                                            <div className="flex items-center gap-0.5 md:gap-1">
-                                                                <ClockIcon className="h-1.5 w-1.5 md:h-2 md:w-2 text-primary" />
+                                                        <div className="flex items-center gap-2 text-white/70 text-[8px] font-black uppercase tracking-widest">
+                                                            <div className="flex items-center gap-1">
+                                                                <ClockIcon className="h-2.5 w-2.5 text-primary" />
                                                                 <span>{item.cookingTime || 'Prêt'}</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-0.5 md:gap-1">
-                                                                <Calendar className="h-1.5 w-1.5 md:h-2 md:w-2 text-primary" />
-                                                                <span>{item.plannedFor ? format(item.plannedFor.toDate(), 'd MMM', { locale: fr }) : 'Aujourd\'hui'}</span>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="mt-2 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
+                                                    <div className="mt-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-500 translate-y-0 md:translate-y-2 md:group-hover:translate-y-0">
                                                         <Button
                                                             className="w-full h-7 rounded-lg font-black bg-white text-primary border-none shadow-lg hover:bg-white/90 transition-all text-[6px] uppercase tracking-widest"
                                                             onClick={() => handleShowRecipe(item)}
@@ -557,7 +539,7 @@ export default function AtelierPage() {
                             </TabsContent>
 
                             <TabsContent value="chef_recipes" className="mt-0 focus-visible:ring-0 outline-none w-full">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 md:gap-8 w-full">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8 w-full">
                                     {isLoadingBooks ? (
                                         Array.from({ length: 12 }).map((_, i) => (
                                             <div key={i} className="aspect-[3/4] w-full bg-muted/50 rounded-xl animate-pulse border border-border/50" />

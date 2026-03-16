@@ -193,7 +193,7 @@ export default function RecipeDetailPage() {
                                             {recipe.galleryUrls.map((url: string, i: number) => (
                                                 <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-border hover:scale-105 transition-all cursor-zoom-in group" onClick={() => setZoomImage(url)}>
                                                     <Image src={url} alt={`Dressage ${i + 1}`} fill className="object-cover" sizes="150px" />
-                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center"><ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6" /></div>
+                                                    <div className="absolute inset-0 bg-black/20 md:bg-black/0 md:group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none md:pointer-events-auto"><ZoomIn className="text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity h-6 w-6" /></div>
                                                 </div>
                                             ))}
                                         </div>

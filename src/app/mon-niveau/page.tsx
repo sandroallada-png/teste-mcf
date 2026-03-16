@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getMotivationalMessageAction } from '../actions';
 import { useToast } from '@/hooks/use-toast';
+import { useReadOnly } from '@/contexts/read-only-context';
 import {
   Dialog,
   DialogContent,
@@ -71,6 +72,8 @@ export default function MyLevelPage() {
   )
   const { data: goalsData, isLoading: isLoadingGoals } = useCollection<{ description: string }>(singleGoalQuery);
 
+  const { isReadOnly, chefName, effectiveLevel, effectiveXp } = useReadOnly();
+
   // --- Data fetching for household members ---
   const spaceId = userProfile?.chefId || (user ? user.uid : null);
   const householdMembersQuery = useMemoFirebase(
@@ -78,24 +81,6 @@ export default function MyLevelPage() {
     [spaceId, firestore]
   );
   const { data: householdMembers, isLoading: isLoadingHousehold } = useCollection<UserProfile>(householdMembersQuery);
-
-  const memberCount = useMemo(() => {
-    if (!householdMembers) return 1;
-    // If I'm a member, I'm already in the list. If I'm the chef, I'm not.
-    const isMember = userProfile?.chefId ? true : false;
-    return householdMembers.length + (isMember ? 0 : 1);
-  }, [householdMembers, userProfile]);
-
-  const totalXP = useMemo(() => {
-    if (!householdMembers) return userProfile?.xp ?? 0;
-    const membersSum = householdMembers.reduce((sum, m) => sum + (m.xp || 0), 0);
-    // If I'm the chef, I need to add my own XP too
-    const isMember = userProfile?.chefId ? true : false;
-    return membersSum + (isMember ? 0 : (userProfile?.xp ?? 0));
-  }, [householdMembers, userProfile]);
-
-  const isSharedLevel = memberCount > 1;
-  const XP_PER_LEVEL = BASE_XP_PER_LEVEL * memberCount;
 
   const [goals, setGoals] = useState('Perdre du poids, manger plus sainement et réduire ma consommation de sucre.');
   const [goalId, setGoalId] = useState<string | null>(null);
@@ -126,8 +111,12 @@ export default function MyLevelPage() {
   }
 
   // --- XP & Level Calculation ---
-  const currentXP = isSharedLevel ? totalXP : (userProfile?.xp ?? 0);
-  const currentLevel = userProfile?.level ?? 1; // Assuming level is synced or we take current user's level as base
+  const memberCount = householdMembers ? (userProfile?.chefId ? householdMembers.length : householdMembers.length + 1) : 1;
+  const isSharedLevel = memberCount > 1;
+  const XP_PER_LEVEL = BASE_XP_PER_LEVEL;
+
+  const currentXP = effectiveXp;
+  const currentLevel = effectiveLevel;
   const xpForCurrentLevel = currentXP % XP_PER_LEVEL;
   const progressPercentage = (xpForCurrentLevel / XP_PER_LEVEL) * 100;
   const currentStreak = userProfile?.streak ?? 0;
@@ -313,7 +302,7 @@ export default function MyLevelPage() {
                             <p className="text-sm font-bold text-foreground/90">{reward.name}</p>
                             <p className="text-[10px] font-medium text-muted-foreground/50 italic uppercase tracking-wider">Bloqué · Requiert niveau {nextLevel}</p>
                           </div>
-                          <div className="opacity-20 group-hover:opacity-100 transition-opacity">
+                          <div className="opacity-100 md:opacity-20 md:group-hover:opacity-100 transition-opacity">
                             {/* Icon from original data is a JSX element */}
                             {/* Just rendering a clone with smaller size */}
                             <div className="h-4 w-4 text-muted-foreground">

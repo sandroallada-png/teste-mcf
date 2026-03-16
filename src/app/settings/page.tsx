@@ -12,7 +12,7 @@ import { useUser, useFirebase, updateDocumentNonBlocking, useCollection, useMemo
 import { collection, doc, query, limit, updateDoc, setDoc } from 'firebase/firestore';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { Meal, UserProfile as UserProfileType } from '@/lib/types';
-import { Loader2, Settings, Palette, Save, Trash2, ShieldCheck, KeyRound, BookOpen, Tag, Info, BrainCircuit, Target, User, Image as ImageIcon, Languages } from 'lucide-react';
+import { Loader2, Settings, Palette, Save, Trash2, ShieldCheck, KeyRound, BookOpen, Tag, Info, BrainCircuit, Target, User, Image as ImageIcon, Languages, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -499,6 +499,35 @@ export default function SettingsPage() {
                             </div>
                         </section>
 
+                        {/* INTERFACE SECTION */}
+                        <section className="space-y-6">
+                            <div className="flex items-center gap-2 border-b pb-2">
+                                <Sparkles className="h-4 w-4 text-muted-foreground" />
+                                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Préférences d'Interface</h2>
+                            </div>
+                            <div className="max-w-2xl bg-card p-6 rounded-lg border space-y-4 shadow-sm">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-1 pr-4">
+                                        <Label htmlFor="floating-shortcuts" className="text-sm font-bold">Raccourci latéral mobile (Edge)</Label>
+                                        <p className="text-xs text-muted-foreground">Afficher une poignée sur le bord droit de l'écran pour accéder rapidement à vos outils essentiels.</p>
+                                    </div>
+                                    <Switch
+                                        id="floating-shortcuts"
+                                        checked={userProfile?.isFloatingShortcutsEnabled !== false}
+                                        onCheckedChange={(checked) => {
+                                            if (isReadOnly) { triggerBlock(); return; }
+                                            if (!userProfileRef) return;
+                                            updateDocumentNonBlocking(userProfileRef, { isFloatingShortcutsEnabled: checked });
+                                            toast({
+                                                title: `Raccourci ${checked ? 'activé' : 'désactivé'}`,
+                                                description: `Le menu flottant a été ${checked ? 'activé' : 'masqué'}.`,
+                                            });
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </section>
+
                         {/* PHYSICAL PROFILE SECTION */}
                         <section className="space-y-6">
                             <div className="flex items-center gap-2 border-b pb-2">
@@ -651,7 +680,7 @@ export default function SettingsPage() {
                         {/* DANGER SECTION REMOVED */}
                     </div>
                 </main>
-                <ImageZoomLightbox imageUrl={zoomImageUrl} onClose={() => setZoomImageUrl(null)} />
+                <ImageZoomLightbox isOpen={!!zoomImageUrl} imageUrl={zoomImageUrl || ''} onClose={() => setZoomImageUrl(null)} />
             </SidebarInset>
         </SidebarProvider>
     );

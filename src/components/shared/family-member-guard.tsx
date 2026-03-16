@@ -69,7 +69,7 @@ export function FamilyMemberGuardModal() {
                     <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/40 border border-muted/60">
                         <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <p className="text-[10px] text-muted-foreground leading-tight">
-                            Contactez votre chef de famille pour qu'il effectue des modifications à votre place.
+                            Demandez à votre chef de famille d'effectuer ces modifications ou discutez avec le coach IA pour obtenir des conseils.
                         </p>
                     </div>
                 </div>

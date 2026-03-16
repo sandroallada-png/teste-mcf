@@ -106,7 +106,7 @@ export function StatCards({
                     <Dialog open={isEditGoalOpen} onOpenChange={setIsEditGoalOpen}>
                       <DialogTrigger asChild>
                         <button
-                          className="p-1 hover:bg-muted rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                          className="p-1 hover:bg-muted rounded-full transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
                           onClick={() => setNewTargetCalories((userProfile?.targetCalories || calculateRecommendedCalories(userProfile)).toString())}
                         >
                           <PlusCircle className="h-3 w-3 text-emerald-500" />

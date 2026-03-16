@@ -52,8 +52,8 @@ const Toast = React.forwardRef<
       {...props}
     >
       {/* HUD Decoration */}
-      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-50" />
-      <div className="absolute top-2 left-2 w-2 h-2 border-t-2 border-l-2 border-primary/20 rounded-tl-sm" />
+      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/40 group-[.destructive]:via-white/40 to-transparent opacity-50" />
+      <div className="absolute top-2 left-2 w-2 h-2 border-t-2 border-l-2 border-primary/20 group-[.destructive]:border-white/40 rounded-tl-sm" />
       {props.children}
     </ToastPrimitives.Root>
   )
@@ -99,7 +99,7 @@ const ToastTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Title
     ref={ref}
-    className={cn("text-sm font-black uppercase tracking-widest text-primary/80", className)}
+    className={cn("text-sm font-black uppercase tracking-widest text-primary/80 group-[.destructive]:!text-white", className)}
     {...props}
   />
 ))
@@ -111,7 +111,7 @@ const ToastDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Description
     ref={ref}
-    className={cn("text-xs font-bold leading-relaxed text-muted-foreground", className)}
+    className={cn("text-xs font-bold leading-relaxed text-muted-foreground group-[.destructive]:!text-white", className)}
     {...props}
   />
 ))

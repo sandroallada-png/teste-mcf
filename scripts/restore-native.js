@@ -7,6 +7,9 @@ const BACKUP_PATH = path.join(__dirname, '../src/app/_actions.backup.ts');
 const SERVER_ROUTES_SRC = path.join(__dirname, '../src/app/(server-routes)');
 const SERVER_ROUTES_HIDDEN = path.join(__dirname, '../src/app/_server-routes-hidden');
 
+const API_SRC = path.join(__dirname, '../src/app/api');
+const API_HIDDEN = path.join(__dirname, '../src/app/_api-hidden');
+
 async function restoreOriginal() {
     try {
         // ── 1. Restaurer actions.ts ──────────────────────────────
@@ -38,6 +41,23 @@ async function restoreOriginal() {
             console.log('✓ (server-routes) contenu restauré');
         } else {
             console.warn('Server routes backup not found, skipping restore...');
+        }
+
+        // ── 3. Restaurer le contenu de api ──────────────────────────
+        if (fs.existsSync(API_HIDDEN)) {
+            const currentItems = await fs.readdir(API_SRC);
+            for (const item of currentItems) {
+                await fs.remove(path.join(API_SRC, item));
+            }
+            const items = await fs.readdir(API_HIDDEN);
+            for (const item of items) {
+                await fs.copy(
+                    path.join(API_HIDDEN, item),
+                    path.join(API_SRC, item)
+                );
+            }
+            await fs.remove(API_HIDDEN);
+            console.log('✓ api contenu restauré');
         }
 
         // ── 3. Restaurer next.config.ts ──

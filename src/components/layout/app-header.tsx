@@ -78,22 +78,24 @@ export function AppHeader({ title, icon, user, sidebarProps, className }: AppHea
                 </div>
 
                 {/* Center: Title (Responsive) */}
-                <div className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2 pointer-events-none md:pointer-events-auto md:static md:translate-x-0 md:flex-row">
-                    <div className="md:hidden flex items-center gap-2">
+                <div className="flex flex-1 items-center justify-center gap-2 overflow-hidden px-1 md:px-2 md:justify-start">
+                    <div className="md:hidden flex items-center shrink-0">
                         <LogoIcon className="h-5 w-5" />
                     </div>
-                    <div className="h-4 w-[1px] bg-border/60 mx-1 hidden md:block" />
-                    <div className="flex items-center gap-2">
-                        <div className="hidden md:block opacity-40 scale-75">{icon}</div>
-                        <h2 className="text-[11px] md:text-xs font-black text-foreground truncate max-w-[150px] md:max-w-none uppercase tracking-[0.2em]">{title}</h2>
+                    <div className="h-4 w-[1px] bg-border/60 mx-1 hidden md:block shrink-0" />
+                    <div className="flex items-center gap-2 overflow-hidden min-w-0">
+                        <div className="hidden md:block opacity-40 scale-75 shrink-0">{icon}</div>
+                        <h2 className="text-[11px] md:text-xs font-black text-foreground truncate uppercase tracking-[0.2em]">{title}</h2>
                     </div>
                 </div>
 
                 {/* Right Side: Actions & Profile */}
-                <div className="flex items-center gap-1 md:gap-3">
-                    <div className="flex items-center mr-1 md:mr-0">
+                <div className="flex items-center gap-1 md:gap-3 shrink-0">
+                    <div className="flex items-center">
                         <NotificationBell />
-                        <ThemeToggle />
+                        <div className="hidden md:block">
+                            <ThemeToggle />
+                        </div>
                     </div>
 
                     <DropdownMenu>
@@ -102,7 +104,7 @@ export function AppHeader({ title, icon, user, sidebarProps, className }: AppHea
                                 <Avatar className="h-full w-full">
                                     <AvatarImage src={userProfile?.avatarUrl ?? user?.photoURL ?? undefined} alt="Profil" />
                                     <AvatarFallback className="bg-primary/10 text-[10px] font-black text-primary">
-                                        {user?.displayName?.charAt(0).toUpperCase()}
+                                        {(userProfile?.name || user?.displayName || 'U').charAt(0).toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>
                             </Button>

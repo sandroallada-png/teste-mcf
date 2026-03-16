@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence, useAnimate } from 'framer-motion';
-import { LayoutDashboard, Calendar, Sparkles, ChefHat, Bot, Loader2, UtensilsCrossed, X } from 'lucide-react';
+import { LayoutDashboard, Calendar, Sparkles, ChefHat, Bot, Loader2, UtensilsCrossed, X, Library } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser, useFirebase, useDoc, useMemoFirebase, useCollection } from '@/firebase';
 import { doc, collection, query, limit } from 'firebase/firestore';
@@ -123,8 +123,8 @@ export function MobileBottomNav() {
 
     const navItems = [
         { href: '/dashboard', icon: LayoutDashboard, label: 'Accueil' },
-        { href: '/calendar', icon: Calendar, label: 'Agenda' },
-        { href: '/cuisine', icon: ChefHat, label: 'Cuisine' },
+        { href: '/calendar', icon: Library, label: 'Calendrier' },
+        { href: '/atelier', icon: Calendar, label: 'Atelier' },
         { href: '/my-flex-ai', icon: Bot, label: 'Coach' },
     ];
     const leftItems = navItems.slice(0, 2);
@@ -153,9 +153,9 @@ export function MobileBottomNav() {
                                 <item.icon className={cn("h-[22px] w-[22px]", isActive && "animate-in fade-in zoom-in duration-300")} />
                                 <span className="text-[9px] font-black tracking-wide uppercase">{item.label}</span>
                                 {isActive && (
-                                    <motion.span 
+                                    <motion.span
                                         layoutId="nav-pill"
-                                        className="absolute bottom-1 h-0.5 w-4 bg-primary rounded-full" 
+                                        className="absolute bottom-1 h-0.5 w-4 bg-primary rounded-full"
                                         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                                     />
                                 )}
@@ -196,9 +196,9 @@ export function MobileBottomNav() {
                                 <item.icon className={cn("h-[22px] w-[22px]", isActive && "animate-in fade-in zoom-in duration-300")} />
                                 <span className="text-[9px] font-black tracking-wide uppercase">{item.label}</span>
                                 {isActive && (
-                                    <motion.span 
+                                    <motion.span
                                         layoutId="nav-pill"
-                                        className="absolute bottom-1 h-0.5 w-4 bg-primary rounded-full" 
+                                        className="absolute bottom-1 h-0.5 w-4 bg-primary rounded-full"
                                         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                                     />
                                 )}

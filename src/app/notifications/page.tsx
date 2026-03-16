@@ -218,7 +218,7 @@ export default function NotificationsPage() {
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:bg-destructive/5"
+                            className="h-8 w-8 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-destructive hover:bg-destructive/5"
                             onClick={() => handleDeleteNotification(notif.id)}
                           >
                             <Trash2 className="h-4 w-4" />

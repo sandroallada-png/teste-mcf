@@ -37,6 +37,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { formatUserIdentifier } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 import {
     Select,
@@ -118,7 +119,8 @@ export default function FoyerControlPage() {
 
             await setDoc(doc(firestore, 'invites', inviteId), inviteData);
 
-            const link = `${window.location.origin}/join-family/${inviteId}`;
+            const origin = window.location.origin.includes('localhost') ? 'https://app.mycookflex.com' : window.location.origin;
+            const link = `${origin}/join-family/${inviteId}`;
             setLastInviteLink(link);
             setInviteName('');
             setInvitePhone('');
@@ -152,13 +154,34 @@ export default function FoyerControlPage() {
         }
     };
 
-    const handleRemoveMember = async (memberId: string, memberName: string) => {
+    const handleRemoveMember = async (memberId: string, memberEmail: string, memberName: string) => {
         if (!confirm(`Voulez-vous vraiment retirer ${memberName} de votre foyer ?`)) return;
         try {
-            await updateDoc(doc(firestore, 'users', memberId), { chefId: null });
-            toast({ title: "Membre retiré" });
+            const memberRef = doc(firestore, 'users', memberId);
+            await updateDoc(memberRef, {
+                chefId: null,
+                status: 'isDenied',
+                removedBy: userProfile?.name || 'Le Chef de famille',
+                origin: 'Exclu (Foyer)'
+            });
+
+            // Create record for admin
+            const deletedMemberRef = doc(collection(firestore, 'deletedMembers'));
+            await setDoc(deletedMemberRef, {
+                id: deletedMemberRef.id,
+                userId: memberId,
+                email: memberEmail,
+                name: memberName,
+                removedBy: userProfile?.name || 'Chef de famille',
+                deletedAt: Timestamp.now(),
+                status: 'new' // Tab: Nouveaux
+            });
+
+            // Clean up notifications for that member or send a last "Bye" but if status is isDenied, they'll see a special page anyway
+
+            toast({ title: "Membre retiré", description: `${memberName} a été banni de votre foyer.` });
         } catch (e) {
-            toast({ variant: "destructive", title: "Erreur" });
+            toast({ variant: "destructive", title: "Erreur", description: "Impossible de retirer le membre." });
         }
     };
 
@@ -335,8 +358,11 @@ export default function FoyerControlPage() {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => copyToClipboard(`${window.location.origin}/join-family/${invite.id}`)}>
+                                                        <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => {
+                                                                const origin = window.location.origin.includes('localhost') ? 'https://app.mycookflex.com' : window.location.origin;
+                                                                copyToClipboard(`${origin}/join-family/${invite.id}`);
+                                                            }}>
                                                                 <Copy className="h-3.5 w-3.5" />
                                                             </Button>
                                                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10" onClick={() => handleDeleteInvite(invite.id)}>
@@ -367,14 +393,19 @@ export default function FoyerControlPage() {
                                                     </div>
                                                     <div className="relative z-10 flex items-center justify-between">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black uppercase shadow-inner">
-                                                                {member.name.charAt(0)}
+                                                            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center p-0.5 border-2 border-primary/5 shadow-inner">
+                                                                <Avatar className="h-full w-full rounded-xl">
+                                                                    <AvatarImage src={member.avatarUrl} />
+                                                                    <AvatarFallback className="bg-primary/5 text-primary font-black uppercase text-lg">
+                                                                        {member.name.charAt(0)}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
                                                             </div>
                                                             <div>
                                                                 <p className="font-black text-lg">{member.name}</p>
                                                                 <div className="flex flex-col gap-0.5">
                                                                     <span className="text-[10px] text-muted-foreground font-bold">{formatUserIdentifier(member.email)}</span>
-                                                                    <span className="text-[10px] text-primary/70 font-black uppercase tracking-tighter">Niveau {member.level} • {member.xp} XP</span>
+                                                                    <span className="text-[10px] text-primary/70 font-black uppercase tracking-tighter">Niveau {userProfile?.level || 1} • {userProfile?.xp || 0} XP (Foyer)</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -382,7 +413,7 @@ export default function FoyerControlPage() {
                                                             variant="ghost"
                                                             size="icon"
                                                             className="h-10 w-10 text-destructive/40 hover:text-destructive hover:bg-destructive/10 transition-colors rounded-xl"
-                                                            onClick={() => handleRemoveMember(member.id, member.name)}
+                                                            onClick={() => handleRemoveMember(member.id, member.email, member.name)}
                                                         >
                                                             <Trash2 className="h-5 w-5" />
                                                         </Button>

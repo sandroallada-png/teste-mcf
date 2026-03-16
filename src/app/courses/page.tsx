@@ -242,7 +242,7 @@ export default function CoursesPage() {
                                     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
                                         {/* Summary Card */}
                                         <Card className="bg-primary/5 border-primary/10 rounded-2xl overflow-hidden relative group">
-                                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                            <div className="absolute top-0 right-0 p-4 opacity-15 md:opacity-10 md:group-hover:opacity-20 transition-opacity">
                                                 <Bot className="h-24 w-24" />
                                             </div>
                                             <CardHeader>
@@ -277,7 +277,7 @@ export default function CoursesPage() {
                                                                     "group flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer",
                                                                     checkedItems.includes(item.name)
                                                                         ? "bg-muted/50 opacity-60 border-transparent"
-                                                                        : "bg-background hover:border-primary/30 hover:shadow-md"
+                                                                        : "bg-background border-muted-foreground/10 md:border-muted md:hover:border-primary/30 hover:shadow-md"
                                                                 )}
                                                             >
                                                                 <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
@@ -285,7 +285,7 @@ export default function CoursesPage() {
                                                                         "h-6 w-6 shrink-0 rounded-lg border-2 flex items-center justify-center transition-colors",
                                                                         checkedItems.includes(item.name)
                                                                             ? "bg-primary border-primary text-white"
-                                                                            : "border-muted group-hover:border-primary/50"
+                                                                            : "border-muted-foreground/20 md:border-muted md:group-hover:border-primary/50"
                                                                     )}>
                                                                         {checkedItems.includes(item.name) && <CheckCircle2 className="h-4 w-4" />}
                                                                     </div>
@@ -314,6 +314,7 @@ export default function CoursesPage() {
                                         {/* Actions */}
                                         <div className="flex justify-center pt-10 gap-4">
                                             <Button variant="outline" onClick={() => {
+                                                if (isReadOnly) { triggerBlock(); return; }
                                                 setShoppingList(null);
                                                 setCheckedItems([]);
                                             }} className="rounded-xl border-dashed">
@@ -321,23 +322,25 @@ export default function CoursesPage() {
                                                 Effacer la liste
                                             </Button>
                                             {shoppingList.isSaved ? (
-                                                <Button 
+                                                <Button
                                                     onClick={() => {
+                                                        if (isReadOnly) { triggerBlock(); return; }
                                                         toast({
                                                             title: "Course terminée !",
                                                             description: "Vos achats ont été marqués comme faits. La liste reste dans l'historique."
                                                         });
                                                         setShoppingList(null);
                                                         setCheckedItems([]);
-                                                    }} 
+                                                    }}
                                                     className="rounded-xl font-bold px-8 shadow-lg shadow-primary/20 hover:scale-105 transition-all text-white bg-green-500 hover:bg-green-600"
                                                 >
                                                     <CheckCircle2 className="mr-2 h-5 w-5" />
                                                     Fin de course
                                                 </Button>
                                             ) : (
-                                                <Button 
+                                                <Button
                                                     onClick={() => {
+                                                        if (isReadOnly) { triggerBlock(); return; }
                                                         if (historyCollectionRef && user) {
                                                             addDocumentNonBlocking(historyCollectionRef, {
                                                                 userId: user.uid,
@@ -351,7 +354,7 @@ export default function CoursesPage() {
                                                             description: "Votre sélection a été sauvegardée dans l'historique."
                                                         });
                                                         setShoppingList(prev => prev ? { ...prev, isSaved: true } : null);
-                                                    }} 
+                                                    }}
                                                     className="rounded-xl font-bold px-8 shadow-lg shadow-primary/20 hover:scale-105 transition-all"
                                                 >
                                                     <CheckCircle2 className="mr-2 h-5 w-5" />

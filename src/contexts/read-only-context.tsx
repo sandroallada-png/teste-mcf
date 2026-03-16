@@ -18,7 +18,13 @@ interface ReadOnlyContextValue {
     /** Ferme le modal de restriction */
     dismissBlock: () => void;
     /** Wrapper de handler : si readOnly, bloque + ouvre modal. Sinon, exécute l'action. */
-    guardAction: <T extends any[]>(fn: (...args: T) => void) => (...args: T) => void;
+    guardAction: <T extends any[], R>(fn: (...args: T) => R) => (...args: T) => R;
+    /** Profil complet du chef, si applicable */
+    chefProfile: UserProfile | null;
+    /** Niveau partagé du foyer */
+    effectiveLevel: number;
+    /** XP partagé du foyer */
+    effectiveXp: number;
 }
 
 const ReadOnlyContext = createContext<ReadOnlyContextValue>({
@@ -27,7 +33,10 @@ const ReadOnlyContext = createContext<ReadOnlyContextValue>({
     isBlocked: false,
     triggerBlock: () => { },
     dismissBlock: () => { },
-    guardAction: (fn) => fn,
+    guardAction: (fn) => fn as any,
+    chefProfile: null,
+    effectiveLevel: 1,
+    effectiveXp: 0,
 });
 
 export function ReadOnlyProvider({ children }: { children: React.ReactNode }) {
@@ -60,19 +69,32 @@ export function ReadOnlyProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const guardAction = useCallback(
-        <T extends any[]>(fn: (...args: T) => void) =>
-            (...args: T) => {
+        <T extends any[], R>(fn: (...args: T) => R) =>
+            (...args: T): R => {
                 if (isReadOnly) {
                     setIsBlocked(true);
-                    return;
+                    return undefined as R;
                 }
-                fn(...args);
+                return fn(...args);
             },
         [isReadOnly]
     );
 
+    const effectiveLevel = userProfile?.chefId ? (chefProfile?.level ?? 1) : (userProfile?.level ?? 1);
+    const effectiveXp = userProfile?.chefId ? (chefProfile?.xp ?? 0) : (userProfile?.xp ?? 0);
+
     return (
-        <ReadOnlyContext.Provider value={{ isReadOnly, chefName, isBlocked, triggerBlock, dismissBlock, guardAction }}>
+        <ReadOnlyContext.Provider value={{
+            isReadOnly,
+            chefName,
+            isBlocked,
+            triggerBlock,
+            dismissBlock,
+            guardAction,
+            chefProfile: chefProfile ?? null,
+            effectiveLevel,
+            effectiveXp
+        }}>
             {children}
         </ReadOnlyContext.Provider>
     );

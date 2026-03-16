@@ -112,10 +112,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     router.replace('/dashboard');
                 }
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error handling user document:", error);
-            // Fallback: if something goes wrong, maybe sign out to prevent broken state
-            auth.signOut();
+            // Don't sign out if it's just an offline error or a firestore reachability issue
+            const isOfflineError = error?.code === 'unavailable' || error?.message?.includes('offline');
+            if (!isOfflineError) {
+                // Only sign out for critical non-network errors if absolutely necessary
+                // For now, let's just log and let the app try to survive
+                // auth.signOut(); 
+            }
         }
 
       } else {

@@ -98,7 +98,7 @@ export function FoodJournal({
                 </div>
                 <button
                   onClick={() => openFormForType(type as import('@/lib/types').MealType)}
-                  className="h-8 w-8 flex items-center justify-center rounded-xl bg-muted/30 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all opacity-0 group-hover/meal:opacity-100 border border-muted/40"
+                  className="h-8 w-8 flex items-center justify-center rounded-xl bg-muted/30 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all opacity-100 md:opacity-0 md:group-hover/meal:opacity-100 border border-muted/40"
                 >
                   <PlusCircle className="h-5 w-5" />
                 </button>
@@ -176,7 +176,7 @@ export function FoodJournal({
                             e.stopPropagation();
                             removeMeal(meal.id, meal.isScheduled);
                           }}
-                          className="h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover/item:opacity-100 transition-all"
+                          className="h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 opacity-100 md:opacity-0 md:group-hover/item:opacity-100 transition-all"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>

@@ -227,7 +227,8 @@ export function ChatInterface({ conversationId, setConversationId }: ChatInterfa
                 householdMembers: householdMembers,
                 todaysCooks: todaysCooks,
             });
-            const aiResponse: Message = { role: 'ai', text: response };
+            const textResponse = typeof response === 'string' ? response : (response as any).message || "Désolé, une erreur technique est survenue.";
+            const aiResponse: Message = { role: 'ai', text: textResponse };
             const finalMessages = [...newMessages, aiResponse];
             setMessages(finalMessages);
 

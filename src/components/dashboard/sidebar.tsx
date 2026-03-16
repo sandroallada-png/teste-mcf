@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, Loader2, Sparkles, Target, User, Activity, Calendar, Refrigerator, BarChart2, Star, History, ShoppingCart, MessageSquare, Bot, Save, LayoutDashboard, Trophy, ChefHat, Shield, UtensilsCrossed, Gem, Edit, Package, Library } from 'lucide-react';
+import { Lightbulb, Loader2, Sparkles, Target, User, Activity, Calendar, Refrigerator, BarChart2, Star, History, ShoppingCart, MessageSquare, Bot, Save, LayoutDashboard, Trophy, ChefHat, Shield, UtensilsCrossed, Edit, Package, Library } from 'lucide-react';
 import type { Meal } from '@/lib/types';
 import { getTipsAction } from '@/app/actions';
 import { useState, useEffect } from 'react';
@@ -28,16 +28,17 @@ import { doc } from 'firebase/firestore';
 import { useLoading } from '@/contexts/loading-context';
 import { cn, formatUserIdentifier } from '@/lib/utils';
 import { useReadOnly } from '@/contexts/read-only-context';
+import { ThemeToggle } from '../theme-toggle';
 
 export const mainNavLinks = [
   { href: '/dashboard', label: 'Tableau de bord', icon: <LayoutDashboard className="h-5 w-5" /> },
   { href: '/cuisine', label: 'Cuisine', icon: <ChefHat className="h-5 w-5" /> },
   { href: '/box', label: <span className="flex items-center gap-2">Ma Box <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-primary/10 text-primary border-none">Nouveau</Badge></span>, icon: <Package className="h-5 w-5" /> },
-  { href: '/atelier', label: <span className="flex items-center gap-2">Atelier du Chef <Gem className="h-3 w-3 text-primary" /></span>, icon: <Library className="h-5 w-5" /> },
-  { href: '/calendar', label: 'Calendrier', icon: <Calendar className="h-5 w-5" /> },
+  { href: '/atelier', label: 'Atelier du Chef', icon: <Calendar className="h-5 w-5" /> },
+  { href: '/calendar', label: 'Calendrier', icon: <Library className="h-5 w-5" /> },
   { href: '/my-flex-ai', label: 'My Flex Coach', icon: <Bot className="h-5 w-5" /> },
-  { href: '/fridge', label: <span className="flex items-center gap-2">Frigo <Gem className="h-3 w-3 text-primary" /></span>, icon: <Refrigerator className="h-5 w-5" /> },
-  { href: '/courses', label: <span className="flex items-center gap-2">Courses <Gem className="h-3 w-3 text-primary" /></span>, icon: <ShoppingCart className="h-5 w-5" /> },
+  { href: '/fridge', label: 'Frigo', icon: <Refrigerator className="h-5 w-5" /> },
+  { href: '/courses', label: 'Courses', icon: <ShoppingCart className="h-5 w-5" /> },
   { href: '/mon-niveau', label: 'Mon Niveau', icon: <Trophy className="h-5 w-5" /> },
 ];
 
@@ -75,9 +76,9 @@ export function Sidebar({ goals, setGoals, meals, isMobile = false }: SidebarPro
   const router = useRouter();
   const pathname = usePathname();
   const { showLoading } = useLoading();
-  const { state } = useSidebar();
+  const { state, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const { isReadOnly, chefName, triggerBlock } = useReadOnly();
+  const { isReadOnly, chefName, triggerBlock, effectiveLevel, effectiveXp } = useReadOnly();
 
   const userProfileRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -122,15 +123,23 @@ export function Sidebar({ goals, setGoals, meals, isMobile = false }: SidebarPro
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     handleSoon(e as React.MouseEvent, href);
-    if (href !== '#' && href !== pathname) {
+
+    // Normalisation des chemins pour éviter le chargement infini si on est déjà sur la page
+    const normalizedPathname = pathname?.replace(/\/$/, '') || '/';
+    const normalizedHref = href?.replace(/\/$/, '') || '/';
+
+    if (href !== '#' && normalizedHref !== normalizedPathname) {
       showLoading("Chargement de la page...");
     }
+
+    // Fermer le menu mobile lors du clic sur un lien
+    setOpenMobile(false);
     // Let the default Link behavior handle navigation
   };
 
   const XP_PER_LEVEL = 500;
-  const currentLevel = userProfile?.level ?? 1;
-  const currentXp = userProfile?.xp ?? 0;
+  const currentLevel = effectiveLevel;
+  const currentXp = effectiveXp;
   const xpForCurrentLevel = currentXp % XP_PER_LEVEL;
   const progressPercentage = (xpForCurrentLevel / XP_PER_LEVEL) * 100;
 
@@ -163,6 +172,10 @@ export function Sidebar({ goals, setGoals, meals, isMobile = false }: SidebarPro
             </div>
           </nav>
           <Separator className="my-4" />
+          <div className="flex items-center justify-between px-3 mb-6">
+            <span className="text-sm font-medium text-muted-foreground">Mode d'affichage</span>
+            <ThemeToggle />
+          </div>
           <div className="flex flex-1 flex-col gap-4">
             <Card className="shadow-md">
               <CardHeader className="p-4">
@@ -328,7 +341,7 @@ export function Sidebar({ goals, setGoals, meals, isMobile = false }: SidebarPro
         <div className={cn("flex items-center gap-2.5 px-2 py-2 hover:bg-accent/40 rounded-md transition-colors cursor-pointer group", isCollapsed && "justify-center px-0")}>
           <Avatar className="h-6 w-6 rounded-sm">
             <AvatarImage src={userProfile?.avatarUrl ?? user?.photoURL ?? undefined} alt="Utilisateur" />
-            <AvatarFallback className="text-[10px] font-bold bg-muted">{user?.displayName?.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarFallback className="text-[10px] font-bold bg-muted">{(userProfile?.name || user?.displayName || 'U').charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
           {!isCollapsed && (
             <div className="flex flex-col overflow-hidden">

@@ -7,7 +7,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 
-const SOURCE_ICON = path.join(__dirname, '../public/mcf-logo.png');
+const SOURCE_ICON = path.join(__dirname, '../public/new-logo/logo-favicon.png');
 const ANDROID_RES = path.join(__dirname, '../android/app/src/main/res');
 
 const SIZES = [

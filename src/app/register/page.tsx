@@ -268,7 +268,7 @@ export default function RegisterPage() {
                     className="h-14 text-base font-bold border-2 hover:bg-muted relative overflow-hidden group transition-all hover:scale-[1.02] active:scale-95"
                     onClick={handleGoogleSignIn}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-red-500/5 to-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-red-500/5 to-yellow-500/5 opacity-40 md:opacity-0 md:group-hover:opacity-100 transition-opacity" />
                     <GoogleIcon className="mr-3 h-5 w-5" />
                     Continuer avec Google
                   </Button>
@@ -303,7 +303,7 @@ export default function RegisterPage() {
                     variant="outline"
                     className="w-full h-16 text-lg font-black shadow-2xl shadow-primary/30 rounded-2xl group relative overflow-hidden text-primary border-2 border-primary/20 bg-primary/5 hover:bg-primary hover:!text-white transition-all duration-300"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full md:group-hover:translate-x-full transition-transform duration-1000" />
                     <span className="relative z-10 flex items-center justify-center">
                       Commencer
                       <ArrowLeft className="ml-3 h-5 w-5 rotate-180 group-hover:translate-x-2 transition-transform" />
@@ -378,7 +378,7 @@ export default function RegisterPage() {
 
                   <div className="flex items-center gap-4 mb-8">
                     <div className="w-14 h-14 bg-white rounded-2xl shadow-lg border border-primary/5 flex items-center justify-center transform -rotate-3 transition-transform group-hover:rotate-0 duration-500 relative">
-                      <div className="absolute inset-0 bg-primary/5 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute inset-0 bg-primary/5 blur-xl rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" />
                       <LogoIcon className="w-10 h-10 relative z-10" />
                     </div>
                     <div>

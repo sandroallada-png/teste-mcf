@@ -6,7 +6,7 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { SidebarProvider, Sidebar as AppSidebar, SidebarInset } from "@/components/ui/sidebar";
 import { useFirebase, useUser, useDoc, useMemoFirebase, useCollection } from "@/firebase";
 import { collection, doc, query, where, Timestamp } from "firebase/firestore";
-import { LayoutDashboard, Loader2, Users, FileText, Ticket, GalleryHorizontal, ShoppingCart, Shield, Utensils, Bell, MessageSquare, Star, Activity, Library } from "lucide-react";
+import { LayoutDashboard, Loader2, Users, FileText, Ticket, GalleryHorizontal, ShoppingCart, Shield, Utensils, Bell, MessageSquare, Star, Activity, Library, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -293,6 +293,22 @@ export default function AdminPage() {
                                     <CardContent>
                                         <Button className="w-full" asChild>
                                             <Link href="/admin/follow-up">Suivre l'activité</Link>
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <Trash2 className="h-5 w-5 text-primary" />
+                                            Membres Supprimés
+                                        </CardTitle>
+                                        <CardDescription>
+                                            Suivi des membres retirés de leurs familles par les chefs.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Button className="w-full" asChild>
+                                            <Link href="/admin/deleted-members">Voir les bannis</Link>
                                         </Button>
                                     </CardContent>
                                 </Card>

@@ -145,10 +145,11 @@ export function MainPanel() {
 
                     <div className="flex flex-wrap gap-3">
                         <Button
-                            onClick={() => setIsSoonDialogOpen(true)}
-                            className="h-9 px-4 text-xs font-semibold rounded shadow-sm transition-colors"
+                            onClick={handleGetSuggestions}
+                            disabled={isLoadingSuggestions || !ingredients || ingredients.length === 0}
+                            className="h-10 px-5 text-sm font-bold rounded-xl shadow-lg shadow-primary/20 hover:scale-105 transition-all bg-primary text-white"
                         >
-                            {isLoadingSuggestions ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-2 h-3.5 w-3.5" />}
+                            {isLoadingSuggestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                             Générer des idées
                         </Button>
 
@@ -165,22 +166,33 @@ export function MainPanel() {
 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
                     {/* Ingredients Column */}
-                    <div className="md:col-span-4 space-y-6">
-                        <div className="flex items-center gap-2 border-b pb-2">
-                            <PlusCircle className="h-4 w-4 text-muted-foreground" />
-                            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/80">Stock actuel</h2>
+                    <div className="md:col-span-4 space-y-6 bg-accent/5 p-4 rounded-3xl border border-border/40">
+                        <div className="flex items-center gap-3 pb-2 border-b border-border/50">
+                            <div className="h-2 w-2 rounded-full bg-primary" />
+                            <h2 className="text-sm font-black uppercase tracking-widest text-foreground">Stock actuel</h2>
                         </div>
 
                         <form onSubmit={handleAddItem} className="space-y-4">
-                            <Input
-                                placeholder={isReadOnly ? "Consultation uniquement..." : "Ajouter un ingrédient..."}
-                                className="h-9 text-sm rounded border-muted/20 focus:border-primary/50 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                                value={newItem}
-                                onChange={e => setNewItem(e.target.value)}
-                                disabled={isReadOnly}
-                                onClick={isReadOnly ? () => triggerBlock() : undefined}
-                                readOnly={isReadOnly}
-                            />
+                            <div className="relative group/input">
+                                <Input
+                                    placeholder={isReadOnly ? "Consultation uniquement..." : "Ajouter un ingrédient..."}
+                                    className="h-12 px-4 text-sm rounded-xl border-2 border-primary/30 bg-background focus:border-primary focus:ring-2 focus:ring-primary/10 shadow-md transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed pr-12 placeholder:text-muted-foreground/40"
+                                    value={newItem}
+                                    onChange={e => setNewItem(e.target.value)}
+                                    disabled={isReadOnly}
+                                    onClick={isReadOnly ? () => triggerBlock() : undefined}
+                                    readOnly={isReadOnly}
+                                />
+                                {!isReadOnly && (
+                                    <button
+                                        type="submit"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/40 hover:text-primary transition-colors disabled:opacity-30"
+                                        disabled={!newItem.trim()}
+                                    >
+                                        <PlusCircle className="h-5 w-5" />
+                                    </button>
+                                )}
+                            </div>
                         </form>
 
                         {isLoadingIngredients ? (
@@ -188,27 +200,28 @@ export function MainPanel() {
                                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/20" />
                             </div>
                         ) : (
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                                 {ingredients && ingredients.length > 0 ? (
                                     ingredients.map(item => (
-                                        <div key={item.id} className="group flex items-center justify-between rounded px-2 py-1.5 hover:bg-accent/40 text-sm transition-colors font-medium">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
-                                                <span>{item.name}</span>
+                                        <div key={item.id} className="group flex items-center justify-between rounded-xl px-3 py-2 bg-background border border-border/50 hover:border-primary/30 transition-all shadow-sm">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-2 w-2 rounded-full bg-primary/20 group-hover:bg-primary transition-colors" />
+                                                <span className="text-sm font-semibold">{item.name}</span>
                                             </div>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="h-6 w-6 rounded text-muted-foreground/20 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
+                                                className="h-8 w-8 rounded-full text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
                                                 onClick={() => handleRemoveItem(item.id)}
                                             >
-                                                <X className="h-3.5 w-3.5" />
+                                                <X className="h-4 w-4" />
                                             </Button>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="py-10 text-center border border-dashed rounded-lg bg-accent/5">
-                                        <p className="text-xs font-medium text-muted-foreground/50 uppercase tracking-widest">
+                                    <div className="py-12 flex flex-col items-center justify-center border-2 border-dashed rounded-3xl bg-background/50 border-muted-foreground/10 text-center px-4">
+                                        <Refrigerator className="h-8 w-8 text-primary/10 mb-2" />
+                                        <p className="text-[10px] font-black font-medium text-muted-foreground uppercase tracking-[0.2em] opacity-40">
                                             Votre frigo est vide
                                         </p>
                                     </div>
@@ -296,9 +309,9 @@ export function MainPanel() {
                         </div>
                         <DialogTitle className="text-center text-xl font-black">Bientôt Disponible ✨</DialogTitle>
                         <DialogDescription className="text-center pt-2 px-2 text-sm text-foreground/80 leading-relaxed font-medium">
-                            Cette fonctionnalité est en cours de préparation. 
-                            <br/><br/>
-                            L'IA analysera automatiquement tous les ingrédients de votre stock actuel et vous proposera instantanément des recettes sur-mesure ! 
+                            Cette fonctionnalité est en cours de préparation.
+                            <br /><br />
+                            L'IA analysera automatiquement tous les ingrédients de votre stock actuel et vous proposera instantanément des recettes sur-mesure !
                         </DialogDescription>
                     </DialogHeader>
                     <div className="mt-4 flex justify-center pb-2">

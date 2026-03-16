@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Refrigerator, Calendar, Grip, Sparkles, ShoppingCart } from 'lucide-react';
+import { X, Refrigerator, Calendar, Grip, Sparkles, ShoppingCart, Library } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -14,9 +14,10 @@ import { Lock } from 'lucide-react';
 export function FloatingShortcuts() {
     const [isOpen, setIsOpen] = useState(false);
     const [showOnboardingWarning, setShowOnboardingWarning] = useState(false);
+    const [isMenuEnabled, setIsMenuEnabled] = useState(true);
     const router = useRouter();
     const pathname = usePathname();
-    const { isFullySetup, user } = useAuthContext();
+    const { isFullySetup, user, firestore } = useAuthContext();
     const [showTutorial, setShowTutorial] = useState(false);
     const [mounted, setMounted] = useState(false);
     const isAuthPage = pathname === '/login' || pathname === '/register';
@@ -27,6 +28,24 @@ export function FloatingShortcuts() {
         pathname === '/preferences' ||
         pathname === '/pricing' ||
         pathname === '/welcome';
+
+    // --- Add Profile check ---
+    useEffect(() => {
+        if (!user || !firestore) return;
+        const fetchSettings = async () => {
+            try {
+                const { getDoc, doc } = await import('firebase/firestore');
+                const userDoc = await getDoc(doc(firestore, 'users', user.uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    setIsMenuEnabled(data.isFloatingShortcutsEnabled !== false);
+                }
+            } catch (e) {
+                console.error("Error fetching shortcut settings:", e);
+            }
+        };
+        fetchSettings();
+    }, [user, firestore, pathname]); // Re-check on pathname too in case settings changed
 
     const isRestrictedByAuth = isAuthPage && !user;
     const showWarning = showOnboardingWarning || isRestrictedByAuth;
@@ -49,7 +68,7 @@ export function FloatingShortcuts() {
         if (!mounted || isRegistrationPath) return;
         if (isOpen) {
             const views = parseInt(localStorage.getItem('mcf-floating-tutorial-views') || '0', 10);
-            if (views < 3) {
+            if (views < 2) {
                 const timer = setTimeout(() => {
                     setShowTutorial(true);
                     // Increment count as soon as it's shown to be strict about the "3 times" rule
@@ -232,7 +251,7 @@ export function FloatingShortcuts() {
         setIsDragging(true);
     };
 
-    if (!mounted || isRegistrationPath) return null;
+    if (!mounted || isRegistrationPath || !isMenuEnabled) return null;
 
     return createPortal(
         <>
@@ -436,8 +455,8 @@ export function FloatingShortcuts() {
                                         variant="ghost"
                                         size="icon"
                                         className="h-10 w-10 rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300 hover:scale-110 transition-transform shadow-sm"
-                                        onClick={() => handleNavigation('/calendar')}
-                                        title="Calendrier"
+                                        onClick={() => handleNavigation('/atelier')}
+                                        title="Atelier du Chef"
                                     >
                                         <Calendar className="h-5 w-5" />
                                     </Button>

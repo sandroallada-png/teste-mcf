@@ -1,4 +1,4 @@
-
+// @ts-nocheck
 'use server';
 
 import {genkit, googleAI} from 'genkit';

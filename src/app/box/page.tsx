@@ -43,7 +43,7 @@ type BoxMeal = {
     calories: number;
     image: string;
     category: string;
-    type: 'breakfast' | 'lunch' | 'dessert' | 'dinner';
+    type: 'breakfast' | 'lunch' | 'dessert' | 'dinner' | 'snack';
     matchReason?: string; // why this dish was chosen
 };
 
@@ -58,6 +58,7 @@ const mealTypesMeta: Record<string, { label: string; icon: React.ReactNode }> = 
     lunch: { label: 'Déjeuner', icon: <Sun className="h-3 w-3" /> },
     dessert: { label: 'Dessert / Collation', icon: <Apple className="h-3 w-3" /> },
     dinner: { label: 'Dîner', icon: <Moon className="h-3 w-3" /> },
+    snack: { label: 'Collation', icon: <Apple className="h-3 w-3" /> },
 };
 
 /* ═══════════════════════════ SCORING ENGINE ════════════════════════ */
@@ -251,7 +252,7 @@ export default function BoxPage() {
     const [savedBoxId, setSavedBoxId] = useState<string | null>(null);
     const [isLoadingBoxes, setIsLoadingBoxes] = useState(true);
 
-    const [conflictList, setConflictList] = useState<{planEntry: PlanEntry, existingMeal: any, date: Date}[]>([]);
+    const [conflictList, setConflictList] = useState<{ planEntry: PlanEntry, existingMeal: any, date: Date }[]>([]);
     const [conflictIdx, setConflictIdx] = useState(0);
     const [pendingPlanEntries, setPendingPlanEntries] = useState<PlanEntry[]>([]);
     const [pendingDeletions, setPendingDeletions] = useState<string[]>([]);
@@ -292,7 +293,7 @@ export default function BoxPage() {
         if (savedBoxData && savedBoxData.length > 0) {
             const latestBox = savedBoxData[0];
             const ageInDays = latestBox.createdAt?.toMillis ? (Date.now() - latestBox.createdAt.toMillis()) / (1000 * 60 * 60 * 24) : 0;
-            
+
             if (ageInDays < 28 && latestBox.boxes?.length > 0) {
                 setSavedBox(latestBox);
                 setSavedBoxId(latestBox.id);
@@ -309,11 +310,11 @@ export default function BoxPage() {
             createdAt: Timestamp.now(),
             boxes: newBoxes,
         };
-        
+
         setSavedBox(boxDoc);
         setSavedBoxId(docRef.id);
         setIsLoadingBoxes(false);
-        
+
         setDoc(docRef, boxDoc).catch(console.error);
 
         addDocumentNonBlocking(collection(firestore, 'users', effectiveChefId, 'boxHistory'), {
@@ -362,7 +363,7 @@ export default function BoxPage() {
             const src = candidates.length ? candidates : pool;
             if (!src.length) return e;
             const pick = src[Math.floor(Math.random() * Math.min(src.length, 5))];
-            
+
             if (effectiveChefId) {
                 addDocumentNonBlocking(collection(firestore, 'users', effectiveChefId, 'boxHistory'), {
                     createdAt: Timestamp.now(),
@@ -387,7 +388,7 @@ export default function BoxPage() {
     const swapMealInBox = (e: React.MouseEvent, dayIdx: number, mealType: string) => {
         e.stopPropagation();
         if (!dishes?.length || !effectiveChefId || !savedBoxId || !savedBox) return;
-        
+
         const currentMeal = boxes.find(b => b.week === selectedWeek)?.days.find(d => d.day === dayIdx)?.meals.find(m => m.type === mealType);
         if (!currentMeal) return;
 
@@ -397,7 +398,7 @@ export default function BoxPage() {
             .filter(s => s.score > -9000)
             .sort((a, b) => b.score - a.score)
             .map(s => s.dish);
-        
+
         const candidates = pool.filter(d => d.category === currentMeal.category);
         const src = candidates.length ? candidates : pool;
         if (!src.length) return;
@@ -439,7 +440,7 @@ export default function BoxPage() {
             skippedMeal: currentMeal.name,
             replacementMeal: pick.name,
         });
-        
+
         toast({ title: "Repas remplacé !", description: `${currentMeal.name} a été échangé.`, duration: 2000 });
     };
 
@@ -449,7 +450,7 @@ export default function BoxPage() {
         setIsPlanning(true);
         const cookingRef = collection(firestore, 'users', effectiveChefId, 'cooking');
         const planStartDate = startDate || startOfToday();
-        
+
         try {
             for (const id of deletions) {
                 const docRef = doc(firestore, 'users', effectiveChefId, 'cooking', id);
@@ -472,12 +473,12 @@ export default function BoxPage() {
                     plannedFor: Timestamp.fromDate(date),
                 });
             }));
-            
+
             toast({
                 title: '✅ Box Planifiée !',
                 description: `${entries.length} repas basés sur votre profil, ajoutés avec succès.`,
             });
-            
+
             addDocumentNonBlocking(collection(firestore, 'users', effectiveChefId, 'boxHistory'), {
                 createdAt: Timestamp.now(),
                 type: 'box_planned',
@@ -511,15 +512,15 @@ export default function BoxPage() {
             const snap = await getDocs(existingQuery);
             const existingMeals = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
 
-            const foundConflicts: {planEntry: PlanEntry, existingMeal: any, date: Date}[] = [];
-            
+            const foundConflicts: { planEntry: PlanEntry, existingMeal: any, date: Date }[] = [];
+
             for (const entry of enabled) {
                 const date = addDays(planStartDate, entry.dayIndex - 1);
                 const matchingExisting = existingMeals.find(m => {
                     const mDate = m.plannedFor?.toDate ? m.plannedFor.toDate() : new Date(m.plannedFor);
                     return format(mDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && m.type === entry.type;
                 });
-                
+
                 if (matchingExisting) {
                     foundConflicts.push({ planEntry: entry, existingMeal: matchingExisting, date });
                 }
@@ -603,6 +604,15 @@ export default function BoxPage() {
                             ) : (
                                 <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-10 space-y-8">
 
+                                    {savedBox?.createdAt && (
+                                        <div className="flex items-center gap-2 px-1 opacity-70">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                                                Box générée le {format(savedBox.createdAt.toDate(), 'd MMMM yyyy à HH:mm', { locale: fr })}
+                                            </span>
+                                        </div>
+                                    )}
+
                                     {/* ── HERO ── */}
                                     <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-background to-background border border-primary/10 p-6 md:p-8">
                                         <div className="absolute top-0 right-0 w-72 h-72 bg-primary/10 blur-[120px] -mr-20 -mt-20 rounded-full pointer-events-none" />
@@ -642,28 +652,50 @@ export default function BoxPage() {
                                     </section>
 
                                     {/* ── WEEK SELECTOR ── */}
-                                    <div className="flex flex-wrap items-center gap-3 justify-center">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Semaine :</p>
-                                        <div className="flex items-center gap-2 bg-muted/30 p-1.5 rounded-full border shadow-inner">
-                                            {boxes.map(box => (
-                                                <button key={box.week}
-                                                    title={box.title}
-                                                    onClick={() => { setSelectedWeek(box.week); setSelectedDay(1); }}
-                                                    className={cn(
-                                                        'relative h-10 w-10 rounded-full text-sm font-black transition-all flex items-center justify-center',
-                                                        selectedWeek === box.week
-                                                            ? 'bg-primary text-primary-foreground shadow-md shadow-primary/30 scale-105'
-                                                            : 'text-muted-foreground hover:bg-background hover:text-foreground'
-                                                    )}
-                                                >
-                                                    {box.week}
-                                                </button>
-                                            ))}
+                                    <div className="flex flex-col items-center gap-4 py-2">
+                                        <div className="flex items-center gap-4">
+                                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Semaines</p>
+                                            <div className="flex items-center gap-2 bg-muted/40 p-1.5 rounded-full border shadow-sm">
+                                                {boxes.map(box => (
+                                                    <button key={box.week}
+                                                        title={box.title}
+                                                        onClick={() => { setSelectedWeek(box.week); setSelectedDay(1); }}
+                                                        className={cn(
+                                                            'relative h-11 w-11 rounded-full text-sm font-black transition-all flex items-center justify-center',
+                                                            selectedWeek === box.week
+                                                                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25 scale-110 z-10'
+                                                                : 'text-muted-foreground hover:bg-background hover:text-foreground'
+                                                        )}
+                                                    >
+                                                        {box.week}
+                                                        {selectedWeek === box.week && (
+                                                            <motion.div layoutId="week-glow" className="absolute -inset-1 rounded-full border-2 border-primary/20" />
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
-                                        {/* Active week label */}
-                                        <span className="text-xs font-bold text-muted-foreground">
-                                            {currentBox?.title}
-                                        </span>
+
+                                        {/* Stable label area to prevent jumps */}
+                                        <div className="h-6 flex items-center justify-center text-center">
+                                            <AnimatePresence mode="wait">
+                                                <motion.div
+                                                    key={selectedWeek}
+                                                    initial={{ opacity: 0, y: 5 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: -5 }}
+                                                    className="flex items-center gap-2"
+                                                >
+                                                    <span className="text-sm font-black text-primary uppercase tracking-tighter">
+                                                        {currentBox?.title}
+                                                    </span>
+                                                    <div className="h-3 w-[1px] bg-border mx-1" />
+                                                    <span className="text-xs font-bold text-muted-foreground italic">
+                                                        {currentBox?.theme}
+                                                    </span>
+                                                </motion.div>
+                                            </AnimatePresence>
+                                        </div>
                                     </div>
 
                                     {/* ── CONTENT GRID ── */}
@@ -793,13 +825,13 @@ export default function BoxPage() {
                                                                 className="object-cover transition-transform duration-700 group-hover:scale-105"
                                                                 sizes="(max-width: 768px) 50vw, 25vw"
                                                             />
-                                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                                            <div className="absolute inset-0 bg-black/25 md:bg-black/0 md:group-hover:bg-black/25 transition-colors flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 pointer-events-none md:pointer-events-auto">
                                                                 <ZoomIn className="h-7 w-7 text-white drop-shadow-lg" />
                                                             </div>
                                                             <div className="absolute top-2 right-2 z-20">
                                                                 <button
                                                                     onClick={(e) => swapMealInBox(e, currentDay.day, meal.type)}
-                                                                    className="h-8 w-8 rounded-full bg-background/90 text-primary hover:bg-primary hover:text-white flex items-center justify-center shadow-lg transition-all active:scale-95 opacity-0 group-hover:opacity-100"
+                                                                    className="h-8 w-8 rounded-full bg-background/90 text-primary hover:bg-primary hover:text-white flex items-center justify-center shadow-lg transition-all active:scale-95 opacity-100 md:opacity-0 md:group-hover:opacity-100 pointer-events-auto"
                                                                     title="Changer de repas"
                                                                 >
                                                                     <RefreshCw className="h-4 w-4" />
@@ -807,8 +839,8 @@ export default function BoxPage() {
                                                             </div>
                                                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3 pointer-events-none">
                                                                 <span className="flex items-center gap-1 text-white/60 text-[9px] font-black uppercase tracking-widest mb-1">
-                                                                    {mealTypesMeta[meal.type].icon}
-                                                                    {mealTypesMeta[meal.type].label}
+                                                                    {mealTypesMeta[meal.type]?.icon || <UtensilsCrossed className="h-3 w-3" />}
+                                                                    {mealTypesMeta[meal.type]?.label || 'Repas'}
                                                                 </span>
                                                                 <h4 className="text-white font-black text-sm leading-tight line-clamp-2 group-hover:-translate-y-1 transition-transform">
                                                                     {meal.name}
@@ -951,7 +983,7 @@ export default function BoxPage() {
                                                     <Image src={entry.image} alt={entry.name} fill className="object-cover" sizes="150px" />
                                                     <div className="absolute inset-0 bg-black/40" />
                                                     <span className="absolute top-2 left-2 text-[8px] font-black uppercase tracking-wider text-white/80 flex items-center gap-0.5">
-                                                        {mealTypesMeta[entry.type].icon} {mealTypesMeta[entry.type].label}
+                                                        {mealTypesMeta[entry.type]?.icon || <UtensilsCrossed className="h-3 w-3" />} {mealTypesMeta[entry.type]?.label || 'Repas'}
                                                     </span>
                                                     <button
                                                         onClick={() => toggleEntry(entry.id, entry.dayIndex)}
@@ -1020,7 +1052,7 @@ export default function BoxPage() {
                             <AlertTriangle className="h-6 w-6" /> Conflit détecté
                         </DialogTitle>
                         <DialogDescription className="text-sm font-medium pt-1 text-muted-foreground">
-                            Vous avez déjà un plat prévu pour ce repas le {conflictList[conflictIdx] ? format(conflictList[conflictIdx].date, 'EEEE d MMM', { locale: fr }) : ''} ({conflictList[conflictIdx] ? mealTypesMeta[conflictList[conflictIdx].planEntry.type].label : ''}).
+                            Vous avez déjà un plat prévu pour ce repas le {conflictList[conflictIdx] ? format(conflictList[conflictIdx].date, 'EEEE d MMM', { locale: fr }) : ''} ({conflictList[conflictIdx] ? (mealTypesMeta[conflictList[conflictIdx].planEntry.type]?.label || 'Repas') : ''}).
                         </DialogDescription>
                     </DialogHeader>
                     {conflictList[conflictIdx] && (

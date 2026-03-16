@@ -14,13 +14,19 @@ import { FamilyMemberGuardModal } from '@/components/shared/family-member-guard'
 import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
 import { AnimatePresence } from 'framer-motion';
 import { GlobalDishPreview } from '@/components/shared/global-dish-preview';
-import { GoogleTranslateProvider } from '@/components/shared/google-translate';
 import { OfflineDetector } from '@/components/shared/offline-detector';
 import { NativeSplashScreen } from '@/components/shared/native-splash';
+import { useNativeBack } from '@/hooks/use-native-back';
+
+import { DexieSyncManager } from '@/lib/dexie/sync';
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  useNativeBack();
   return (
     <FirebaseClientProvider>
+      <DexieSyncManager />
+      {/* Le splash est monté en premier — il couvre tout pendant le chargement de l'auth */}
+      <NativeSplashScreen />
       <ThemeProvider
         attribute="class"
         defaultTheme="system"
@@ -32,9 +38,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <AuthProvider>
               <ReadOnlyProvider>
                 <AnimatePresence mode="wait">
-                  <GoogleTranslateProvider>
-                    {children}
-                  </GoogleTranslateProvider>
+                  {children}
                 </AnimatePresence>
                 <FamilyMemberGuardModal />
                 <FeedbackButton />
@@ -44,7 +48,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 <GlobalDishPreview />
                 <Toaster />
                 <OfflineDetector />
-                <NativeSplashScreen />
               </ReadOnlyProvider>
             </AuthProvider>
           </LoadingProvider>

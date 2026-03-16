@@ -350,7 +350,7 @@ export default function AdminDishesPage() {
                                                                                         />
                                                                                     </TableCell>
                                                                                     <TableCell className="text-right">
-                                                                                        <div className="flex justify-end gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                        <div className="flex justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                                                                                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(dish)}>
                                                                                                 <Edit className="h-4 w-4" />
                                                                                             </Button>

@@ -107,7 +107,7 @@ export default function CuisinePage() {
     const { user, isUserLoading } = useUser();
     const { firestore } = useFirebase();
     const { toast } = useToast();
-    const { isReadOnly, triggerBlock } = useReadOnly();
+    const { isReadOnly, triggerBlock, guardAction } = useReadOnly();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -141,6 +141,8 @@ export default function CuisinePage() {
     const { data: userProfile, isLoading: isLoadingProfile } = useDoc<UserProfile>(userProfileRef);
 
     const effectiveChefId = userProfile?.chefId || user?.uid;
+    const effectiveChefProfileRef = useMemoFirebase(() => (effectiveChefId ? doc(firestore, 'users', effectiveChefId) : null), [effectiveChefId, firestore]);
+    const { data: effectiveChefProfile } = useDoc<UserProfile>(effectiveChefProfileRef);
 
     const cookingCollectionRef = useMemoFirebase(() => (effectiveChefId ? collection(firestore, `users/${effectiveChefId}/cooking`) : null), [effectiveChefId, firestore]);
     const cookingQuery = useMemoFirebase(() => (cookingCollectionRef ? query(cookingCollectionRef, orderBy('plannedFor', 'desc')) : null), [cookingCollectionRef]);
@@ -232,30 +234,42 @@ export default function CuisinePage() {
     useEffect(() => {
         if (!effectiveChefId || !userProfileRef || !pastCookingItems.length) return;
         const missedItems = pastCookingItems.filter(item => !item.isDone && !(item as any).isMissedProcessed);
-        
-        if (missedItems.length > 0) {
-            missedItems.forEach(async (item) => {
-                const ref = doc(firestore, 'users', effectiveChefId, 'cooking', item.id);
-                updateDoc(ref, { isMissedProcessed: true }).catch(console.error);
 
-                const xpPenalty = -5;
+        if (missedItems.length > 0) {
+            const processMissedMeals = async () => {
+                const totalXpPenalty = -5 * missedItems.length;
+                
+                // Marquer tout comme traité
+                missedItems.forEach(item => {
+                    const ref = doc(firestore, 'users', effectiveChefId, 'cooking', item.id);
+                    updateDoc(ref, { isMissedProcessed: true }).catch(console.error);
+                });
+
                 try {
                     const userDoc = await getDoc(userProfileRef);
                     if (userDoc.exists()) {
                         const currentXp = userDoc.data()?.xp ?? 0;
-                        const newXp = Math.max(0, currentXp + xpPenalty);
+                        const newXp = Math.max(0, currentXp + totalXpPenalty);
                         const newLevel = Math.floor(newXp / 500) + 1;
                         await updateDoc(userProfileRef, { xp: newXp, level: newLevel });
+                        
+                        const title = missedItems.length === 1 ? 'Repas manqué' : 'Repas manqués';
+                        const description = missedItems.length === 1 
+                            ? `Oups ! Vous n'avez pas cuisiné "${missedItems[0].name}" dernièrement. -5 XP.` 
+                            : `Oups ! Vous avez manqué ${missedItems.length} repas récemment. ${totalXpPenalty} XP.`;
+                            
                         toast({
                             variant: 'destructive',
-                            title: 'Repas manqué',
-                            description: `Oups ! Vous n'avez pas cuisiné "${item.name}" hier. -5 XP.`
+                            title: title,
+                            description: description
                         });
                     }
                 } catch (e) {
-                    console.error("Failed to deduct XP for missed meal", e);
+                    console.error("Failed to deduct XP for missed meals", e);
                 }
-            });
+            };
+            
+            processMissedMeals();
         }
     }, [pastCookingItems, effectiveChefId, userProfileRef, toast, firestore]);
 
@@ -273,7 +287,7 @@ export default function CuisinePage() {
                 count: 6,
                 timeOfDay: mappedTimeOfDay as any
             });
-            
+
             if (recs && recs.length > 0) {
                 setRecommendations(recs as any);
             } else if (dishes && dishes.length > 0) {
@@ -290,7 +304,7 @@ export default function CuisinePage() {
         if (user && dishes && dishes.length > 0) {
             fetchRecs();
         } else if (user && (!dishes || dishes.length === 0)) {
-           // Allow initial skeleton load while dishes load
+            // Allow initial skeleton load while dishes load
         }
     }, [user, timeOfDay, dishes]);
 
@@ -340,9 +354,10 @@ export default function CuisinePage() {
     }, [goalsData, user, isLoadingGoals, firestore]);
 
     const updateGoals = (newDescription: string) => {
+        if (isReadOnly) { triggerBlock(); return; }
         setGoals(newDescription);
-        if (goalId && user) {
-            const goalRef = doc(firestore, 'users', user.uid, 'goals', goalId);
+        if (goalId && effectiveChefId) {
+            const goalRef = doc(firestore, 'users', effectiveChefId, 'goals', goalId);
             updateDoc(goalRef, { description: newDescription }).catch(console.error);
         }
     }
@@ -422,9 +437,8 @@ export default function CuisinePage() {
         }
     };
 
-    const handleAcceptSuggestion = async (meal: SingleMealSuggestion, date: Date, recipe: string) => {
-        if (isReadOnly) { triggerBlock(); return; }
-        if (!user || !userProfileRef) return;
+    const handleAcceptSuggestion = guardAction(async (meal: SingleMealSuggestion, date: Date, recipe: string) => {
+        if (!effectiveChefId || !userProfileRef) return;
 
         const XP_PER_LEVEL = 500;
         const xpGained = (meal as any).xpGained || 10;
@@ -459,7 +473,7 @@ export default function CuisinePage() {
         await Promise.all(deletePromises);
 
         addDocumentNonBlocking(mealsRef, {
-            userId: user.uid,
+            userId: user?.uid,
             name: meal.name,
             calories: meal.calories,
             type: meal.type,
@@ -468,7 +482,7 @@ export default function CuisinePage() {
         });
 
         addDocumentNonBlocking(cookingRef, {
-            userId: user.uid,
+            userId: user?.uid,
             name: meal.name,
             calories: meal.calories,
             cookingTime: meal.cookingTime,
@@ -481,12 +495,15 @@ export default function CuisinePage() {
         });
 
         try {
-            const userDoc = await getDoc(userProfileRef);
-            const currentXp = userDoc.data()?.xp ?? 0;
+            const targetProfileRef = effectiveChefProfileRef || userProfileRef;
+            if (!targetProfileRef) return;
+
+            const targetDoc = await getDoc(targetProfileRef);
+            const currentXp = targetDoc.data()?.xp ?? 0;
             const newXp = currentXp + xpGained;
             const newLevel = Math.floor(newXp / XP_PER_LEVEL) + 1;
 
-            await updateDoc(userProfileRef, {
+            await updateDoc(targetProfileRef, {
                 xp: increment(xpGained),
                 level: newLevel
             });
@@ -506,7 +523,7 @@ export default function CuisinePage() {
         });
         setSuggestion(null);
         setIsDialogOpen(false);
-    };
+    });
 
     const handleSelectCookingItem = (item: Cooking | null) => {
         setSelectedCookingItem(item);
@@ -527,7 +544,8 @@ export default function CuisinePage() {
         }, 420);
     };
 
-    const handleCookingItemDone = (item: Cooking) => {
+    const handleCookingItemDone = guardAction(async (item: Cooking) => {
+        if (!effectiveChefId || !user) return;
         // Animate card out then MARK AS DONE in Firestore to move it to Archives
         setDismissingCookingId(item.id);
         setTimeout(async () => {
@@ -547,23 +565,23 @@ export default function CuisinePage() {
                 updateDoc(ref, { isDone: true }).catch(console.error);
 
                 const xpGained = 15;
-                if (userProfileRef) {
-                    getDoc(userProfileRef).then(userDoc => {
-                        const currentXp = userDoc.data()?.xp ?? 0;
+                const targetProfileRef = effectiveChefProfileRef || userProfileRef;
+                if (targetProfileRef) {
+                    getDoc(targetProfileRef).then(targetDoc => {
+                        const currentXp = targetDoc.data()?.xp ?? 0;
                         const newXp = currentXp + xpGained;
                         const newLevel = Math.floor(newXp / 500) + 1;
-                        updateDoc(userProfileRef, { xp: increment(xpGained), level: newLevel });
-                        toast({ title: 'Repas terminé !', description: `Vous avez cuisiné ${item.name}. +${xpGained} XP !`});
+                        updateDoc(targetProfileRef, { xp: increment(xpGained), level: newLevel });
+                        toast({ title: 'Repas terminé !', description: `Vous avez cuisiné ${item.name}. +${xpGained} XP pour le foyer !` });
                     }).catch(console.error);
                 }
             }
             setDismissingCookingId(null);
             setCookingModeItem(null);
         }, 450);
-    };
+    });
 
-    const handleDeleteCookingItem = (item: Cooking) => {
-        if (isReadOnly) { triggerBlock(); return; }
+    const handleDeleteCookingItem = guardAction(async (item: Cooking) => {
         if (!effectiveChefId) return;
 
         setDismissingCookingId(item.id);
@@ -576,10 +594,9 @@ export default function CuisinePage() {
                 description: `${item.name} a été retiré de la cuisine.`,
             });
         }, 450);
-    };
+    });
 
-    const handleDeletePendingItem = (itemId: string) => {
-        if (isReadOnly) { triggerBlock(); return; }
+    const handleDeletePendingItem = guardAction(async (itemId: string) => {
         if (!effectiveChefId) return;
         animateAndRemovePending(itemId, () => {
             const itemRef = doc(firestore, 'users', effectiveChefId, 'pendingCookings', itemId);
@@ -590,7 +607,7 @@ export default function CuisinePage() {
                 description: "Le repas a été retiré de la liste d'attente.",
             });
         });
-    };
+    });
 
     const handlePreviewPendingItem = async (item: PendingCooking, viewOnly: boolean = false) => {
         // Find the dish in the master list if possible to get more details (robust search)
@@ -629,8 +646,7 @@ export default function CuisinePage() {
         setIsDialogOpen(true);
     };
 
-    const handleCookNow = async (item: PendingCooking) => {
-        if (isReadOnly) { triggerBlock(); return; }
+    const handleCookNow = guardAction(async (item: PendingCooking) => {
         if (!user || !effectiveChefId) return;
 
         // Find master dish for more info (robust search)
@@ -700,10 +716,9 @@ export default function CuisinePage() {
             console.error('Error cooking now:', error);
             toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'envoyer en cuisine.' });
         }
-    };
+    });
 
-    const handleToggleFavorite = async (meal: any) => {
-        if (isReadOnly) { triggerBlock(); return; }
+    const handleToggleFavorite = guardAction(async (meal: any) => {
         if (!user) return;
         const recipeId = meal.id || meal.name.replace(/\s/g, '_').toLowerCase();
         const favRef = doc(firestore, 'users', user.uid, 'favoriteRecipes', recipeId);
@@ -726,10 +741,9 @@ export default function CuisinePage() {
         } catch (error) {
             console.error("Error toggling favorite:", error);
         }
-    };
+    });
 
-    const handleAddToPendingDish = async (meal: SingleMealSuggestion) => {
-        if (isReadOnly) { triggerBlock(); return; }
+    const handleAddToPendingDish = guardAction(async (meal: SingleMealSuggestion) => {
         if (!user || !effectiveChefId) return;
 
         try {
@@ -761,10 +775,9 @@ export default function CuisinePage() {
             console.error("Error adding to pending:", error);
             toast({ variant: "destructive", title: "Erreur", description: "Impossible de mettre le plat en attente." });
         }
-    };
+    });
 
-    const handlePlanDish = async (meal: SingleMealSuggestion, date: Date, slot: 'breakfast' | 'lunch' | 'dinner' | 'dessert') => {
-        if (isReadOnly) { triggerBlock(); return; }
+    const handlePlanDish = guardAction(async (meal: SingleMealSuggestion, date: Date, slot: 'breakfast' | 'lunch' | 'dinner' | 'dessert') => {
         if (!user || !effectiveChefId) return;
 
         try {
@@ -827,7 +840,7 @@ export default function CuisinePage() {
             console.error("Error planning dish:", error);
             toast({ variant: "destructive", title: "Erreur", description: "Impossible de programmer le repas." });
         }
-    };
+    });
 
     const tabsRef = useRef<HTMLDivElement>(null);
 
@@ -889,7 +902,7 @@ export default function CuisinePage() {
                         <div className="fixed top-14 left-0 md:left-64 right-0 z-[45] pointer-events-none transform-gpu transition-[left] duration-300">
                             {/* Visual mask matching header backdrop offset to top-14 */}
                             <div className="absolute inset-x-0 bottom-0 top-0 bg-background/80 backdrop-blur-xl border-b border-border/40 -z-10" />
-                            
+
                             <div className="pointer-events-auto pt-4 pb-4 w-full flex justify-center px-4 max-w-6xl mx-auto">
                                 <div className="bg-background/80 backdrop-blur-xl border border-border/40 shadow-2xl rounded-2xl p-1.5 flex items-center max-w-full relative transition-all shadow-primary/5">
                                     <div className="overflow-x-auto scrollbar-hide flex items-center w-full overscroll-x-contain">
@@ -904,7 +917,7 @@ export default function CuisinePage() {
                                                     {title}
                                                 </TabsTrigger>
                                             ))}
-                                            
+
                                             {activeTab === 'suggestions' && (
                                                 <div className="flex items-center pl-1 ml-1 border-l border-border/50 h-6 shrink-0">
                                                     <Button
@@ -971,7 +984,7 @@ export default function CuisinePage() {
                                         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
                                             {recommendations.slice(0, 3).map((dish, idx) => (
                                                 <Card key={idx} className="group relative aspect-[5/7] overflow-hidden border-none shadow-lg transition-all rounded-xl cursor-pointer" onClick={() => handleShowRecipeForDish(dish)}>
-                                                    <div className="absolute top-3 right-3 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="absolute top-3 right-3 z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                                                         <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-background/90 shadow-sm" onClick={(e) => {
                                                             e.stopPropagation();
                                                             if (user) trackInteractionAction(user.uid, dish.name, dish.origin, dish.category, 'like');
@@ -991,7 +1004,7 @@ export default function CuisinePage() {
                                                         <Badge variant="outline" className="mb-1.5 w-fit text-[7px] md:text-[8px] bg-primary/20 backdrop-blur border-white/10 text-white font-black uppercase tracking-widest px-1.5 py-0.5 rounded-sm">
                                                             ✨ {dish.matchReason || 'Suggestion MyFlex'}
                                                         </Badge>
-                                                        <h3 
+                                                        <h3
                                                             className="text-sm md:text-xl font-black text-white uppercase italic leading-tight group-hover:-translate-y-1 transition-transform hover:underline underline-offset-4 decoration-primary"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
@@ -1067,7 +1080,7 @@ export default function CuisinePage() {
                                                                 {dish.category}
                                                             </Badge>
                                                         </div>
-                                                        <h4 
+                                                        <h4
                                                             className="text-sm md:text-xl font-black text-white uppercase italic leading-tight mb-1.5 group-hover:-translate-y-1 transition-transform hover:underline underline-offset-4 decoration-primary"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
@@ -1125,7 +1138,7 @@ export default function CuisinePage() {
                                                             <X className="h-3 w-3" />
                                                         </Button>
                                                     </div>
-                                                    <CardTitle 
+                                                    <CardTitle
                                                         className="text-sm md:text-lg font-bold truncate mt-0.5 hover:text-primary transition-colors cursor-pointer hover:underline decoration-primary/30"
                                                         onClick={() => openDishPreview(item.name)}
                                                     >
@@ -1201,7 +1214,7 @@ export default function CuisinePage() {
                                                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                                                         onClick={() => setZoomImage(selectedCookingItem.imageUrl || `https://picsum.photos/seed/${selectedCookingItem.name.replace(/\s/g, '-')}/400/300`)}
                                                     />
-                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                                    <div className="absolute inset-0 bg-black/20 md:bg-black/0 md:group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 pointer-events-none md:pointer-events-auto">
                                                         <ZoomIn className="h-10 w-10 text-white drop-shadow-lg" />
                                                     </div>
                                                 </div>

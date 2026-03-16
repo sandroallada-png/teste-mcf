@@ -23,6 +23,7 @@ import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/no
 import { Loader2, PartyPopper, LayoutDashboard, ChefHat, PlusCircle, Sparkles, UtensilsCrossed, X, BarChart2, Bot, Calendar, AlarmClock, Check, Shuffle, Award, Flame, Target, TrendingUp, Search, ArrowRight, Pizza, Sandwich, Salad, Cookie, Hourglass } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLoading } from '@/contexts/loading-context';
+import { useReadOnly } from '@/contexts/read-only-context';
 import { startOfDay, endOfDay } from 'date-fns';
 import { AppHeader } from '@/components/layout/app-header';
 import { Button } from '@/components/ui/button';
@@ -74,7 +75,13 @@ export default function DashboardPage() {
   const [isMagicOpen, setIsMagicOpen] = useState(false);
   const [selectedMagicMeal, setSelectedMagicMeal] = useState<DayPlanMeal | null>(null);
 
+  const { isReadOnly, guardAction } = useReadOnly();
+
   const openFormForType = (type?: Meal['type']) => {
+    if (isReadOnly && type) {
+      guardAction(() => { })(); // Trigger block modal
+      return;
+    }
     setDefaultMealType(type);
     setFormOpen(true);
   };
@@ -277,7 +284,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleUpdateTargetCalories = async () => {
+  const handleUpdateTargetCalories = guardAction(async () => {
     if (!user || isNaN(parseInt(newTargetCalories))) return;
     try {
       const userRef = doc(firestore, `users/${user.uid}`);
@@ -289,7 +296,7 @@ export default function DashboardPage() {
     } catch (e) {
       toast({ variant: "destructive", title: "Erreur", description: "Impossible de mettre à jour l'objectif." });
     }
-  };
+  });
 
   const handleExplainCalories = async () => {
     const kcal = parseInt(newTargetCalories);
@@ -318,6 +325,13 @@ export default function DashboardPage() {
 
   const addMeal = async (meal: { name: string; type: Meal['type'], cookedBy?: string, calories?: number, imageUrl?: string }) => {
     if (!user || !userProfileRef) return;
+
+    // Guard for writing actions
+    if (isReadOnly) {
+      guardAction(() => { })();
+      return;
+    }
+
     setIsAddingMeal(true);
 
     try {
@@ -368,7 +382,22 @@ export default function DashboardPage() {
         isDone: false
       });
 
-      toast({ title: 'Repas ajouté en cuisine !', description: `${meal.name} (${calories} kcal) a été envoyé en cuisine.` });
+      // Update XP for the household/chef
+      if (xpGained > 0) {
+        const targetProfileRef = doc(firestore, 'users', effectiveChefId!);
+        const targetDoc = await getDoc(targetProfileRef);
+        const currentXp = targetDoc.data()?.xp ?? 0;
+        const newXp = currentXp + xpGained;
+        const newLevel = Math.floor(newXp / 500) + 1; // XP_PER_LEVEL is 500
+
+        await updateDoc(targetProfileRef, {
+          xp: increment(xpGained),
+          level: newLevel
+        });
+        toast({ title: 'Repas ajouté !', description: `${meal.name} ajouté. +${xpGained} XP pour le foyer !` });
+      } else {
+        toast({ title: 'Repas ajouté en cuisine !', description: `${meal.name} (${calories} kcal) a été envoyé en cuisine.` });
+      }
       setFormOpen(false);
 
     } catch (e) {
@@ -378,7 +407,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleAddToPending = (meal: Omit<Meal, 'id' | 'date'>) => {
+  const handleAddToPending = guardAction((meal: Omit<Meal, 'id' | 'date'>) => {
     if (!effectiveChefId || !user) return;
     const pendingCookingCollectionRef = collection(firestore, 'users', effectiveChefId, 'pendingCookings');
     addDocumentNonBlocking(pendingCookingCollectionRef, {
@@ -393,9 +422,9 @@ export default function DashboardPage() {
       description: `${meal.name} est prêt à être cuisiné depuis la page Cuisine.`,
     });
     setSelectedMealForAction(null);
-  };
+  });
 
-  const handleScheduleMeal = async (meal: DayPlanMeal) => {
+  const handleScheduleMeal = guardAction(async (meal: DayPlanMeal) => {
     if (!effectiveChefId || !user) return;
 
     const existingMeal = displayMeals.find(m => m.type === meal.type);
@@ -426,9 +455,9 @@ export default function DashboardPage() {
     } catch (e) {
       toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de programmer le repas.' });
     }
-  };
+  });
 
-  const handleConfirmReplace = async () => {
+  const handleConfirmReplace = guardAction(async () => {
     if (!mealConflict || !effectiveChefId || !user) return;
     try {
       // Nettoie proprement tout de ce type
@@ -464,9 +493,9 @@ export default function DashboardPage() {
     } catch (e) {
       toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de remplacer le repas.' });
     }
-  };
+  });
 
-  const removeMeal = async (mealId: string, isScheduled: boolean = false) => {
+  const removeMeal = guardAction(async (mealId: string, isScheduled: boolean = false) => {
     if (!effectiveChefId) return;
     const targetMeal = displayMeals.find(m => m.id === mealId);
 
@@ -487,9 +516,9 @@ export default function DashboardPage() {
       const mealRef = doc(firestore, 'users', effectiveChefId, collectionName, mealId);
       deleteDocumentNonBlocking(mealRef);
     }
-  };
+  });
 
-  const handleAcceptPlan = async () => {
+  const handleAcceptPlan = guardAction(async () => {
     if (!effectiveChefId || dayPlan.length === 0 || !user) return;
     setIsAcceptingPlan(true);
 
@@ -547,7 +576,7 @@ export default function DashboardPage() {
     } finally {
       setIsAcceptingPlan(false);
     }
-  };
+  });
 
   const displayMeals = useMemo(() => {
     const mealMap = new Map<string, any>();
@@ -576,7 +605,7 @@ export default function DashboardPage() {
     return (Array.from(mealMap.values()) as (Meal & { isScheduled: boolean })[]).filter(m => ['breakfast', 'lunch', 'dinner', 'dessert'].includes(m.type as string));
   }, [todaysMeals, scheduledMeals, dishImageMap]);
 
-  const handleReplaceWithAlternative = async (alternativeName: string) => {
+  const handleReplaceWithAlternative = guardAction(async (alternativeName: string) => {
     if (!suggestionMeal?.id || !effectiveChefId) return;
     try {
       const isScheduled = (suggestionMeal as any).isScheduled;
@@ -596,7 +625,7 @@ export default function DashboardPage() {
     } catch (e) {
       toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de modifier le repas.' });
     }
-  };
+  });
 
   const cooksForToday = useMemo(() => {
     const cooks: Partial<Record<Meal['type'], string>> = {};
@@ -689,7 +718,7 @@ export default function DashboardPage() {
                             sizes="(max-width: 768px) 45vw, (max-width: 1200px) 33vw, 25vw"
                             priority={index === 0}
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 transition-opacity group-hover:opacity-90" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90 md:opacity-80 md:group-hover:opacity-90 transition-opacity" />
                           <div className="absolute bottom-0 left-0 p-2 md:p-3">
                             {slide.subtitle && <p className="text-[8px] md:text-[10px] uppercase tracking-widest text-white/70 font-bold">{slide.subtitle}</p>}
                             {slide.title && <p className="text-xs md:text-sm font-black text-white">{slide.title}</p>}
@@ -841,7 +870,7 @@ export default function DashboardPage() {
                             "group relative flex flex-col gap-2 p-2.5 rounded-2xl border-2 transition-all duration-300",
                             isSelected
                               ? "bg-primary/5 border-primary shadow-md shadow-primary/10"
-                              : "bg-muted/30 border-transparent hover:border-muted-foreground/20"
+                              : "bg-muted/30 border-muted-foreground/10 md:border-transparent md:hover:border-muted-foreground/20"
                           )}
                         >
                           <div className="relative aspect-square w-full rounded-xl overflow-hidden border border-border shadow-sm">
@@ -854,7 +883,7 @@ export default function DashboardPage() {
                             )}
                             <div className={cn(
                               "absolute inset-0 transition-opacity duration-300",
-                              isSelected ? "bg-primary/10" : "bg-black/0 group-hover:bg-black/5"
+                              isSelected ? "bg-primary/10" : "bg-black/5 md:bg-black/0 md:group-hover:bg-black/5"
                             )} />
                           </div>
                           <div className="min-w-0">

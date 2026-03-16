@@ -13,7 +13,7 @@ export function Logo({ className, showText = true }: { className?: string; showT
 export function LogoIcon({ className }: { className?: string }) {
   return (
     <Image
-      src="/mcf-logo.png"
+      src="/new-logo/logo-favicon.png"
       alt="My Cook Flex Icon"
       width={40}
       height={40}

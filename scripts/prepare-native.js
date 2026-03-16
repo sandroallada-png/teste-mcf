@@ -9,6 +9,9 @@ const BACKUP_PATH = path.join(__dirname, '../src/app/_actions.backup.ts');
 const SERVER_ROUTES_SRC = path.join(__dirname, '../src/app/(server-routes)');
 const SERVER_ROUTES_HIDDEN = path.join(__dirname, '../src/app/_server-routes-hidden');
 
+const API_SRC = path.join(__dirname, '../src/app/api');
+const API_HIDDEN = path.join(__dirname, '../src/app/_api-hidden');
+
 async function swapForNative() {
     try {
         // ── 1. Actions ──────────────────────────────────────────
@@ -43,6 +46,22 @@ async function swapForNative() {
             console.log('✓ (server-routes) vidé (exclu du build natif)');
         } else {
             console.warn('(server-routes) not found, skipping...');
+        }
+
+        // ── 3. Masquer api — copie + suppression ──
+        if (fs.existsSync(API_HIDDEN)) {
+            console.warn('Hidden API ALREADY EXISTS. Aborting.');
+            process.exit(1);
+        }
+
+        if (fs.existsSync(API_SRC)) {
+            await fs.copy(API_SRC, API_HIDDEN);
+            const items = await fs.readdir(API_SRC);
+            for (const item of items) {
+                await fs.remove(path.join(API_SRC, item));
+            }
+            await fs.writeFile(path.join(API_SRC, '.gitkeep'), '');
+            console.log('✓ api vidé (exclu du build natif)');
         }
 
         // ── 3. Injecter la configuration statique pour Capacitor ──
