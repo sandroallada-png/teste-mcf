@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const ADMIN_EMAIL_LOCAL = ADMIN_EMAIL;
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
+    const unsubAuth = onAuthStateChanged(auth, async (u) => {
       setUser(u);
 
       if (!u) {
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsFullySetup(false);
         setLoading(false);
         signalAppReady();
-        deleteAuthCookie(); // ← supprimer le cookie dès la déconnexion
+        deleteAuthCookie();
 
         const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password') || pathname.startsWith('/reset-password') || pathname.startsWith('/join-family');
         const isProtectedRoute = !PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/')) && !isAuthRoute;
@@ -87,90 +87,91 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // User logged in
-      const isAdmin = u.email === ADMIN_EMAIL_LOCAL;
+      // User logged in - Set up real-time listener for user document
+      const { onSnapshot } = await import('firebase/firestore');
       const userDocRef = doc(firestore, 'users', u.uid);
-      const userDocSnap = await getDoc(userDocRef);
-      let data: any;
+      
+      const unsubDoc = onSnapshot(userDocRef, async (docSnap) => {
+          if (!docSnap.exists()) {
+              const isAdmin = u.email === ADMIN_EMAIL_LOCAL;
+              const newData = {
+                id: u.uid,
+                name: u.displayName || 'Nouvel utilisateur',
+                email: u.email,
+                photoURL: u.photoURL,
+                role: isAdmin ? 'admin' : 'user',
+                createdAt: serverTimestamp(),
+                subscriptionStatus: '',
+                xp: 0,
+                level: 1,
+              };
+              await setDoc(userDocRef, newData, { merge: true });
+              return; // next snapshot will handle it
+          }
 
-      if (!userDocSnap.exists()) {
-        const newData = {
-          id: u.uid,
-          name: u.displayName || 'Nouvel utilisateur',
-          email: u.email,
-          photoURL: u.photoURL,
-          role: isAdmin ? 'admin' : 'user',
-          createdAt: serverTimestamp(),
-          subscriptionStatus: '',
-          xp: 0,
-          level: 1,
-        };
-        await setDoc(userDocRef, newData, { merge: true });
-        data = newData;
-      } else {
-        data = userDocSnap.data();
-        if (isAdmin && data?.role !== 'admin') {
-          await updateDoc(userDocRef, { role: 'admin' });
-          data.role = 'admin';
-        }
-      }
+          const data = docSnap.data();
+          const isAdmin = u.email === ADMIN_EMAIL_LOCAL;
 
-      setUserDataState(data);
+          if (isAdmin && data?.role !== 'admin') {
+              await updateDoc(userDocRef, { role: 'admin' });
+          }
 
-      // ← Écrire le cookie IMMÉDIATEMENT après avoir déterminé le rôle
-      setAuthCookie(isAdmin ? 'admin' : 'user');
+          setUserDataState(data);
+          setAuthCookie(isAdmin ? 'admin' : 'user');
 
-      if (data?.status === 'isDenied') {
-        setLoading(false);
-        signalAppReady();
-        if (pathname !== '/denied') {
-          router.replace('/denied');
-        }
-        return;
-      }
+          if (data?.status === 'isDenied') {
+              setLoading(false);
+              signalAppReady();
+              if (pathname !== '/denied') {
+                  router.replace('/denied');
+              }
+              return;
+          }
 
-      const hasBasicProfile = !!(data?.age && data?.country && data?.referralSource);
-      const hasPersonalization = !!data?.theme;
-      const hasPreferences = !!data?.mainObjective;
-      const hasPricing = !!data?.subscriptionStatus;
-      const hasAvatar = !!data?.avatarUrl;
-      const isFamilyMember = !!data?.chefId;
-      const fullySetup = (hasBasicProfile && hasPersonalization && hasPreferences && hasPricing && hasAvatar) || isFamilyMember;
+          const hasBasicProfile = !!(data?.age && data?.country && data?.referralSource);
+          const hasPersonalization = !!data?.theme;
+          const hasPreferences = !!data?.mainObjective;
+          const hasPricing = !!data?.subscriptionStatus;
+          const hasAvatar = !!data?.avatarUrl;
+          const isFamilyMember = !!data?.chefId;
+          const fullySetup = (hasBasicProfile && hasPersonalization && hasPreferences && hasPricing && hasAvatar) || isFamilyMember;
 
-      setIsFullySetup(fullySetup);
-      setLoading(false);
-      signalAppReady();
+          setIsFullySetup(fullySetup);
+          setLoading(false);
+          signalAppReady();
 
-      const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password') || pathname.startsWith('/reset-password') || pathname.startsWith('/join-family');
+          const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password') || pathname.startsWith('/reset-password') || pathname.startsWith('/join-family');
 
-      if (isAdmin) {
-        if (!pathname.startsWith('/admin')) {
-          router.replace('/admin');
-        }
-      } else if (isFamilyMember) {
-        // Skip onboarding for family members
-        if (isAuthRoute || ['/welcome', '/personalization', '/preferences', '/pricing', '/avatar-selection'].some(p => pathname.startsWith(p))) {
-          router.replace('/dashboard');
-        }
-      } else {
-        // Onboarding logic: only for primary users
-        if (!hasBasicProfile && !pathname.startsWith('/welcome') && !pathname.startsWith('/register') && !pathname.startsWith('/join-family')) {
-          router.replace('/welcome');
-        } else if (hasBasicProfile && !hasPersonalization && !pathname.startsWith('/personalization')) {
-          router.replace('/personalization');
-        } else if (hasPersonalization && !hasPreferences && !pathname.startsWith('/preferences')) {
-          router.replace('/preferences');
-        } else if (hasPreferences && !hasPricing && !pathname.startsWith('/pricing')) {
-          router.replace('/pricing');
-        } else if (hasPricing && !hasAvatar && !pathname.startsWith('/avatar-selection')) {
-          router.replace('/avatar-selection');
-        } else if (fullySetup && (isAuthRoute || ['/welcome', '/personalization', '/preferences', '/pricing', '/avatar-selection'].some(p => pathname.startsWith(p)))) {
-          router.replace('/dashboard');
-        }
-      }
+          if (isAdmin) {
+              if (!pathname.startsWith('/admin')) {
+                  router.replace('/admin');
+              }
+          } else if (isFamilyMember) {
+              if (isAuthRoute || ['/welcome', '/personalization', '/preferences', '/pricing', '/avatar-selection'].some(p => pathname.startsWith(p))) {
+                  router.replace('/dashboard');
+              }
+          } else {
+              // Onboarding logic
+              if (!hasBasicProfile && !pathname.startsWith('/welcome') && !pathname.startsWith('/register') && !pathname.startsWith('/join-family')) {
+                  router.replace('/welcome');
+              } else if (hasBasicProfile && !hasPersonalization && !pathname.startsWith('/personalization')) {
+                  router.replace('/personalization');
+              } else if (hasPersonalization && !hasPreferences && !pathname.startsWith('/preferences')) {
+                  router.replace('/preferences');
+              } else if (hasPreferences && !hasPricing && !pathname.startsWith('/pricing')) {
+                  router.replace('/pricing');
+              } else if (hasPricing && !hasAvatar && !pathname.startsWith('/avatar-selection')) {
+                  router.replace('/avatar-selection');
+              } else if (fullySetup && (isAuthRoute || ['/welcome', '/personalization', '/preferences', '/pricing', '/avatar-selection'].some(p => pathname.startsWith(p)))) {
+                  router.replace('/dashboard');
+              }
+          }
+      });
+
+      return () => unsubDoc();
     });
 
-    return () => unsub();
+    return () => unsubAuth();
   }, [pathname, firestore, router]);
 
   // Le NativeSplashScreen reste visible PENDANT le chargement de l'auth.

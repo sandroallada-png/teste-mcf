@@ -31,9 +31,8 @@ export function AccentThemeProvider({ children }: { children: ReactNode }) {
     if (typeof window !== 'undefined') {
       const root = document.documentElement;
       root.style.setProperty('--primary', theme.hsl);
-      // We assume the foreground is always light for custom primary colors.
-      // This could be made more complex if themes need dark foregrounds.
-      root.style.setProperty('--primary-foreground', '210 40% 98%');
+      // Apply dynamic foreground for proper contrast (Black or White)
+      root.style.setProperty('--primary-foreground', theme.foregroundHsl || '0 0% 100%');
     }
   }, [theme]);
 

@@ -14,12 +14,15 @@ import { Lock } from 'lucide-react';
 export function FloatingShortcuts() {
     const [isOpen, setIsOpen] = useState(false);
     const [showOnboardingWarning, setShowOnboardingWarning] = useState(false);
-    const [isMenuEnabled, setIsMenuEnabled] = useState(true);
+    const { isFullySetup, user, firestore, userData } = useAuthContext();
     const router = useRouter();
     const pathname = usePathname();
-    const { isFullySetup, user, firestore } = useAuthContext();
     const [showTutorial, setShowTutorial] = useState(false);
     const [mounted, setMounted] = useState(false);
+
+    // Reactive check for floating shortcuts enabled status
+    const isMenuEnabled = userData?.isFloatingShortcutsEnabled !== false;
+
     const isAuthPage = pathname === '/login' || pathname === '/register';
     const isRegistrationPath = pathname === '/register' ||
         pathname === '/login' ||
@@ -28,24 +31,6 @@ export function FloatingShortcuts() {
         pathname === '/preferences' ||
         pathname === '/pricing' ||
         pathname === '/welcome';
-
-    // --- Add Profile check ---
-    useEffect(() => {
-        if (!user || !firestore) return;
-        const fetchSettings = async () => {
-            try {
-                const { getDoc, doc } = await import('firebase/firestore');
-                const userDoc = await getDoc(doc(firestore, 'users', user.uid));
-                if (userDoc.exists()) {
-                    const data = userDoc.data();
-                    setIsMenuEnabled(data.isFloatingShortcutsEnabled !== false);
-                }
-            } catch (e) {
-                console.error("Error fetching shortcut settings:", e);
-            }
-        };
-        fetchSettings();
-    }, [user, firestore, pathname]); // Re-check on pathname too in case settings changed
 
     const isRestrictedByAuth = isAuthPage && !user;
     const showWarning = showOnboardingWarning || isRestrictedByAuth;

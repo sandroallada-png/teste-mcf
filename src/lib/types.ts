@@ -285,6 +285,7 @@ export const NutritionalAgentChatInputSchema = z.object({
   plannedMeals: z.array(z.object({ name: z.string(), date: z.string() })).optional().describe("A list of meals the user has planned for the future."),
   householdMembers: z.array(z.string()).optional().describe("A list of the user's household members."),
   todaysCooks: z.record(z.string()).optional().describe("An object mapping meal types to the name of the person cooking it today."),
+  isAITrainingEnabled: z.boolean().optional().describe("Whether the user has enabled AI training/personalization."),
 });
 export type NutritionalAgentChatInput = z.infer<typeof NutritionalAgentChatInputSchema>;
 export type NutritionalAgentChatOutput = string;
@@ -396,6 +397,9 @@ const MealPlanItemSchema = z.object({
   type: z.enum(['breakfast', 'lunch', 'dinner', 'snack', 'dessert']),
   calories: z.number(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
+  imageUrl: z.string().url().optional(),
+  imageHint: z.string().optional(),
+  cookedBy: z.string().optional(),
 });
 
 export const MealPlanSchema = z.array(MealPlanItemSchema);

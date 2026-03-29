@@ -340,6 +340,7 @@ export default function BoxPage() {
                     recipe: dish?.recipe || '',
                     imageHint: dish?.imageHint || entry.name,
                     createdAt: Timestamp.now(),
+                    isDone: false,
                     plannedFor: Timestamp.fromDate(date),
                 });
             }));

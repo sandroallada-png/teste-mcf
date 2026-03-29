@@ -16,6 +16,36 @@ import type { MealPlan, AIPersonality, Meal, FridgeItem, Cooking, UserProfile } 
 import { useToast } from '@/hooks/use-toast';
 import { format, startOfDay, endOfDay } from 'date-fns';
 
+const TypewriterText = ({ text, onComplete }: { text: string; onComplete?: () => void }) => {
+    const [displayedText, setDisplayedText] = useState('');
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        if (index < text.length) {
+            const timer = setTimeout(() => {
+                // Afficher par blocs de 5 caractères pour simuler un rendu par ligne plus rapide
+                const nextIndex = Math.min(index + 5, text.length);
+                setDisplayedText(text.substring(0, nextIndex));
+                setIndex(nextIndex);
+            }, 5); // Très rapide pour un effet fluide par blocs
+            return () => clearTimeout(timer);
+        } else {
+            onComplete?.();
+        }
+    }, [index, text, onComplete]);
+
+    return (
+        <ReactMarkdown
+            className="prose prose-sm dark:prose-invert max-w-none prose-p:text-inherit"
+            components={{
+                p: ({ node, ...props }) => <p className="mb-0 leading-relaxed" {...props} />,
+            }}
+        >
+            {displayedText}
+        </ReactMarkdown>
+    );
+};
+
 type Message = {
     role: 'user' | 'ai';
     text: string;
@@ -59,7 +89,7 @@ export function ChatInterface({ conversationId, setConversationId }: ChatInterfa
     ]);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [feedbackSent, setFeedbackSent] = useState<Record<number, boolean>>({});
+    const [feedbackSent, setFeedbackSent] = useState<Record<number, 1 | -1>>({});
 
     // --- Data Fetching for AI Context ---
     const conversationRef = useMemoFirebase(() => {
@@ -195,7 +225,7 @@ export function ChatInterface({ conversationId, setConversationId }: ChatInterfa
             createdAt: serverTimestamp(),
         });
 
-        setFeedbackSent(prev => ({ ...prev, [messageIndex]: true }));
+        setFeedbackSent(prev => ({ ...prev, [messageIndex]: rating }));
         toast({ title: "Merci !", description: "Votre retour a bien été pris en compte." });
     };
 
@@ -235,11 +265,13 @@ export function ChatInterface({ conversationId, setConversationId }: ChatInterfa
                 plannedMeals: plannedMeals?.map(m => ({ name: m.name, date: format(m.plannedFor.toDate(), 'yyyy-MM-dd') })),
                 householdMembers: householdMembers,
                 todaysCooks: todaysCooks,
+                isAITrainingEnabled: userProfile?.isAITrainingEnabled,
             });
             const textResponse = typeof response === 'string' ? response : (response as any).message || "Désolé, une erreur technique est survenue.";
             const aiResponse: Message = { role: 'ai', text: textResponse };
             const finalMessages = [...newMessages, aiResponse];
             setMessages(finalMessages);
+            setIsLoading(false); // Stop loading immediately when response arrives
 
             const savedConvId = await handleSaveConversation(finalMessages);
 
@@ -254,7 +286,6 @@ export function ChatInterface({ conversationId, setConversationId }: ChatInterfa
                 text: "Désolé, une erreur s'est produite. Veuillez réessayer.",
             };
             setMessages(prev => [...prev, aiErrorMessage]);
-        } finally {
             setIsLoading(false);
         }
     };
@@ -288,23 +319,45 @@ export function ChatInterface({ conversationId, setConversationId }: ChatInterfa
                                             </div>
                                         )}
 
-                                        <div className={cn("flex flex-col gap-2 max-w-[85%] sm:max-w-xl", isAiMessage ? "items-start" : "items-end")}>
-                                            <div
-                                                className={cn(
-                                                    "rounded-2xl p-3 md:p-4 text-sm font-medium leading-relaxed transition-all duration-300",
-                                                    !isAiMessage
-                                                        ? 'bg-primary text-white shadow-xl shadow-primary/20 rounded-tr-none'
-                                                        : 'bg-muted/50 backdrop-blur-sm border border-primary/5 text-foreground rounded-tl-none hover:border-primary/20'
-                                                )}
-                                            >
-                                                <ReactMarkdown
-                                                    className="prose prose-sm dark:prose-invert max-w-none"
-                                                    components={{
-                                                        p: ({ node, ...props }) => <p className="mb-0" {...props} />,
-                                                    }}
+                                        <div className={cn("flex flex-col gap-2 w-full", isAiMessage ? "items-start" : "items-end")}>
+                                                <div
+                                                    className={cn(
+                                                        "p-1 md:p-2 text-sm leading-relaxed transition-all duration-300",
+                                                        !isAiMessage
+                                                            ? 'bg-primary text-primary-foreground rounded-2xl p-3 md:p-4 rounded-tr-none prose-invert shadow-xl shadow-primary/20'
+                                                            : 'bg-transparent text-foreground max-w-none'
+                                                    )}
                                                 >
-                                                    {intro}
-                                                </ReactMarkdown>
+                                                    {isAiMessage ? (
+                                                        // Only use typewriter for the LAST message if it's the one we just received
+                                                        (index === messages.length - 1 && isLoading === false && messages.length > 1) ? (
+                                                            <TypewriterText text={intro} />
+                                                        ) : (
+                                                            <ReactMarkdown
+                                                                className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed"
+                                                                components={{
+                                                                    p: ({ node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,
+                                                                }}
+                                                            >
+                                                                {intro}
+                                                            </ReactMarkdown>
+                                                        )
+                                                    ) : (
+                                                        <ReactMarkdown
+                                                            className="prose prose-sm dark:prose-invert max-w-none"
+                                                            components={{
+                                                                p: ({ node, ...props }) => (
+                                                                    <p 
+                                                                        className="mb-0 text-white font-bold drop-shadow-sm" 
+                                                                        style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)' }} 
+                                                                        {...props} 
+                                                                    />
+                                                                ),
+                                                            }}
+                                                        >
+                                                            {intro}
+                                                        </ReactMarkdown>
+                                                    )}
                                                 {plan && (
                                                     <div className="mt-4 pt-4 border-t border-primary/10">
                                                         <MealPlanCard plan={plan} />
@@ -312,34 +365,39 @@ export function ChatInterface({ conversationId, setConversationId }: ChatInterfa
                                                 )}
                                             </div>
 
-                                            {isAiMessage && !isLoading && index > 0 && (
-                                                <div className={cn(
-                                                    "flex items-center gap-1.5 transition-all duration-300",
-                                                    feedbackSent[index] ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                                )}>
+                                            {isAiMessage && (index > 0 || messages.length > 1) && !isLoading && !plan && (
+                                                <div className="flex items-center gap-2 mt-1 ml-1 animate-in fade-in duration-700">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
                                                         className={cn(
-                                                            "h-7 w-7 rounded-xl text-muted-foreground/40 hover:text-green-500 hover:bg-green-500/10 transition-colors",
-                                                            feedbackSent[index] === true && "text-green-500 bg-green-500/10"
+                                                            "h-8 w-8 rounded-full transition-all duration-300",
+                                                            feedbackSent[index] === 1
+                                                                ? "text-white bg-green-500 shadow-md scale-110"
+                                                                : feedbackSent[index] === -1
+                                                                    ? "text-muted-foreground/30 bg-muted/20 opacity-40"
+                                                                    : "text-green-600/60 bg-green-500/10 hover:bg-green-500/20 hover:text-green-600 hover:scale-105"
                                                         )}
                                                         onClick={() => handleFeedback(index, 1)}
-                                                        disabled={feedbackSent[index]}
+                                                        disabled={feedbackSent[index] !== undefined}
                                                     >
-                                                        <ThumbsUp className="h-3.5 w-3.5" />
+                                                        <ThumbsUp className="h-4 w-4" />
                                                     </Button>
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
                                                         className={cn(
-                                                            "h-7 w-7 rounded-xl text-muted-foreground/40 hover:text-red-500 hover:bg-red-500/10 transition-colors",
-                                                            feedbackSent[index] === true && "text-red-500 bg-red-500/10"
+                                                            "h-8 w-8 rounded-full transition-all duration-300",
+                                                            feedbackSent[index] === -1
+                                                                ? "text-white bg-red-500 shadow-md scale-110"
+                                                                : feedbackSent[index] === 1
+                                                                    ? "text-muted-foreground/30 bg-muted/20 opacity-40"
+                                                                    : "text-red-600/60 bg-red-500/10 hover:bg-red-500/20 hover:text-red-600 hover:scale-105"
                                                         )}
                                                         onClick={() => handleFeedback(index, -1)}
-                                                        disabled={feedbackSent[index]}
+                                                        disabled={feedbackSent[index] !== undefined}
                                                     >
-                                                        <ThumbsDown className="h-3.5 w-3.5" />
+                                                        <ThumbsDown className="h-4 w-4" />
                                                     </Button>
                                                 </div>
                                             )}
@@ -398,6 +456,9 @@ export function ChatInterface({ conversationId, setConversationId }: ChatInterfa
                             <span className="sr-only">Envoyer</span>
                         </Button>
                     </div>
+                    <p className="text-[10px] text-center text-muted-foreground/50 mt-2 font-medium">
+                        L'IA peut faire des erreurs. Vérifiez les informations importantes.
+                    </p>
                 </form>
             </div>
         </div>

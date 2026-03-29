@@ -128,6 +128,8 @@ export default function CuisinePage() {
     const [dismissingId, setDismissingId] = useState<string | null>(null);
     const [dismissingCookingId, setDismissingCookingId] = useState<string | null>(null);
 
+    const processedMissedIdsRef = useRef<Set<string>>(new Set());
+
     // --- Data Fetching from Firestore ---
     const dishesCollectionRef = useMemoFirebase(() => query(collection(firestore, 'dishes'), where('isVerified', '==', true)), [firestore]);
     const { data: dishes, isLoading: isLoadingDishes } = useCollection<Dish>(dishesCollectionRef);
@@ -271,9 +273,18 @@ export default function CuisinePage() {
     // Effect to handle missed meals
     useEffect(() => {
         if (!effectiveChefId || !userProfileRef || !pastCookingItems.length) return;
-        const missedItems = pastCookingItems.filter(item => !item.isDone && !(item as any).isMissedProcessed);
+        
+        // Filter out items that are already being processed by this Ref to avoid "burst toasts"
+        const missedItems = pastCookingItems.filter(item => 
+            !item.isDone && 
+            !(item as any).isMissedProcessed && 
+            !processedMissedIdsRef.current.has(item.id)
+        );
 
         if (missedItems.length > 0) {
+            // Track these IDs immediately
+            missedItems.forEach(item => processedMissedIdsRef.current.add(item.id));
+
             const processMissedMeals = async () => {
                 const totalXpPenalty = -5 * missedItems.length;
                 

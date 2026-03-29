@@ -82,7 +82,7 @@ export default function CalendarPage() {
     const { data: dailyPlannedAll, isLoading: isLoadingDailyPlanned } = useCollection<Cooking>(dailyPlannedQuery);
 
     const dailyPlanned = useMemo(() => {
-        return (dailyPlannedAll ?? []).filter(meal => meal.isDone === false);
+        return (dailyPlannedAll ?? []).filter(meal => !meal.isDone);
     }, [dailyPlannedAll]);
 
 
@@ -144,7 +144,7 @@ export default function CalendarPage() {
     const plannedDates = useMemo(() => {
         if (!allPlannedGlobal) return [];
         return allPlannedGlobal
-            .filter(p => p.isDone === false)
+            .filter(p => !p.isDone)
             .map(p => startOfDay(p.plannedFor.toDate()));
     }, [allPlannedGlobal]);
 
@@ -304,6 +304,10 @@ export default function CalendarPage() {
                                                         locale={fr}
                                                         modifiers={modifiers}
                                                         modifiersClassNames={modifiersClassNames}
+                                                        classNames={{
+                                                            day_today: "!bg-emerald-700 !text-white !font-black !rounded-xl !shadow-lg shadow-emerald-500/30",
+                                                            day_selected: "!bg-orange-500 !text-white !font-black !rounded-xl !shadow-lg shadow-orange-500/30"
+                                                        }}
                                                     />
                                                 </div>
                                             </Card>

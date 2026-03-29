@@ -18,7 +18,8 @@ import {
     HelpCircle,
     Flame,
     CheckCircle2,
-    X
+    X,
+    AlertTriangle
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -66,7 +67,9 @@ interface AddMealWindowProps {
 }
 
 const UNHEALTHY_KEYWORDS = [
-    'burger', 'pizza', 'frite', 'soda', 'coca', 'kebab', 'tacos', 'glace', 'mcdo', 'kfc', 'nutella', 'mayonnaise', 'beignet', 'crepe salee', 'panini', 'chips'
+    'burger', 'pizza', 'frite', 'soda', 'coca', 'kebab', 'tacos', 'glace', 'mcdo', 'kfc', 'quick', 'burger king', 'bk', 
+    'nutella', 'mayonnaise', 'beignet', 'crepe salee', 'panini', 'chips', 'candy', 'bonbon', 'sucre', 'gateau', 'donuts',
+    'hot dog', 'hot-dog', 'nuggets', 'fricadelle', 'poutine', 'shawarma', 'gaufre', 'biere', 'vin', 'alcool'
 ];
 
 const mealTypeTranslations: Record<string, string> = {
@@ -203,15 +206,12 @@ export function AddMealWindow({ isOpen, onClose, onSubmit, household = [], userI
 
     const handleFormSubmit = async (values: MealFormValues) => {
         // Compliance Check
-        const isWeightLossObjective = mainObjective?.toLowerCase().includes('perte') || 
-                                     mainObjective?.toLowerCase().includes('poids') ||
-                                     mainObjective?.toLowerCase().includes('minceur');
+        const isHealthObjective = mainObjective?.toLowerCase().match(/perte|poids|minceur|santé|équilibré|diabète|cholestérol/);
         
         const isUnhealthy = UNHEALTHY_KEYWORDS.some(kw => values.name.toLowerCase().includes(kw));
 
-        if (isWeightLossObjective && isUnhealthy && !complianceWarningOpen) {
+        if (isHealthObjective && isUnhealthy && !complianceWarningOpen) {
             setComplianceWarningOpen(true);
-            // We don't return yet, we let the user click "OK" on the warning before proceeding or they can cancel
             return;
         }
 
@@ -421,37 +421,38 @@ export function AddMealWindow({ isOpen, onClose, onSubmit, household = [], userI
                         className="absolute inset-0 bg-background/90 backdrop-blur-md z-[60] flex items-center justify-center p-6"
                     >
                         <motion.div 
-                            initial={{ scale: 0.9, y: 20 }}
+                            initial={{ scale: 0.95, y: 10 }}
                             animate={{ scale: 1, y: 0 }}
-                            className="bg-card w-full max-w-[340px] p-8 rounded-[2.5rem] border-2 shadow-2xl text-center space-y-6"
+                            className="bg-white dark:bg-zinc-900 w-full max-w-[340px] p-10 rounded-[2.5rem] border-0 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] text-center space-y-8"
                         >
-                            <div className="mx-auto w-20 h-20 rounded-full bg-amber-50 flex items-center justify-center border-4 border-amber-100 animate-bounce shadow-inner">
-                                <span className="text-4xl">⚠️</span>
+                            <div className="flex justify-center">
+                                <div className="p-4 rounded-full bg-amber-100/50 dark:bg-amber-900/30">
+                                    <AlertTriangle className="h-10 w-10 text-amber-500" strokeWidth={2.5} />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <h2 className="text-2xl font-black text-foreground">Attention !</h2>
-                                <p className="text-muted-foreground font-medium leading-relaxed">
-                                    Ce repas ne correspond pas à votre objectif actuel de <span className="text-primary font-bold">{mainObjective || "votre santé"}</span>.
+                            <div className="space-y-3">
+                                <h2 className="text-2xl font-black text-foreground tracking-tight">Attention!</h2>
+                                <p className="text-muted-foreground font-medium text-base leading-relaxed">
+                                    Ce repas ne correspond pas à votre objectif.
                                 </p>
                             </div>
-                            <div className="flex flex-col gap-3">
+                            <div className="flex flex-col gap-3 pt-2">
                                 <Button 
                                     onClick={() => {
                                         setComplianceWarningOpen(false);
-                                        // Procéder quand même car c'est un avertissement
                                         const vals = form.getValues();
                                         setIsSubmitting(true);
                                         procceedSubmission(vals, activeTab);
                                     }}
-                                    className="w-full h-12 rounded-2xl bg-amber-100 hover:bg-amber-200 text-amber-900 border-2 border-amber-200 font-bold shadow-lg shadow-amber-900/5 active:scale-95 transition-all"
+                                    className="w-full h-14 rounded-2xl bg-transparent hover:bg-muted text-foreground border-2 border-muted-foreground/10 font-black text-lg transition-transform active:scale-95"
                                 >
-                                    OK, JE COMPRENDS
+                                    OK
                                 </Button>
                                 <button 
                                     onClick={() => setComplianceWarningOpen(false)}
-                                    className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors pt-2"
+                                    className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 hover:text-primary transition-colors pt-2"
                                 >
-                                    MODIFIER MON REPAS
+                                    Modifier mon choix
                                 </button>
                             </div>
                         </motion.div>

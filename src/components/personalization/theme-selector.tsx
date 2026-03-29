@@ -15,20 +15,21 @@ export type Theme = {
   name: string;
   hsl: string;
   accentHsl: string;
+  foregroundHsl: string; // Dynamic foreground for contrast
   className: string;
   color: string;
 };
 
 export const themes: Theme[] = [
-  { name: 'Vert Forêt',      hsl: '145 63% 29%', accentHsl: '145 50% 90%', className: 'bg-[#1C5D3E]', color: '#1C5D3E' },
-  { name: 'Rose Orchidée',   hsl: '336 78% 57%', accentHsl: '336 70% 92%', className: 'bg-[#E54B8A]', color: '#E54B8A' },
-  { name: 'Rouge Passion',   hsl: '0 78% 57%',   accentHsl: '0 70% 92%',   className: 'bg-[#E54B4B]', color: '#E54B4B' },
-  { name: 'Jaune Solaire',   hsl: '48 96% 50%',  accentHsl: '48 90% 90%',  className: 'bg-[#FFC700]', color: '#FFC700' },
-  { name: 'Bleu Royal',      hsl: '213 78% 57%', accentHsl: '213 70% 92%', className: 'bg-[#4B8BE5]', color: '#4B8BE5' },
-  { name: 'Violet Mystique', hsl: '266 78% 57%', accentHsl: '266 70% 92%', className: 'bg-[#8A4BE5]', color: '#8A4BE5' },
-  { name: 'Café Intense',    hsl: '25 40% 35%',  accentHsl: '25 40% 85%',  className: 'bg-[#855D4A]', color: '#855D4A' },
-  { name: 'Gris Sidéral',    hsl: '240 5% 50%',  accentHsl: '240 5% 90%',  className: 'bg-[#808080]', color: '#808080' },
-  { name: 'Noir Onyx',       hsl: '240 10% 11%', accentHsl: '240 5% 20%',  className: 'bg-[#1C1C1E]', color: '#1C1C1E' },
+  { name: 'Vert Forêt',      hsl: '145 63% 29%', accentHsl: '145 50% 90%', foregroundHsl: '0 0% 100%', className: 'bg-[#1C5D3E]', color: '#1C5D3E' },
+  { name: 'Rose Orchidée',   hsl: '336 78% 57%', accentHsl: '336 70% 92%', foregroundHsl: '0 0% 100%', className: 'bg-[#E54B8A]', color: '#E54B8A' },
+  { name: 'Rouge Passion',   hsl: '0 78% 57%',   accentHsl: '0 70% 92%',   foregroundHsl: '0 0% 100%', className: 'bg-[#E54B4B]', color: '#E54B4B' },
+  { name: 'Jaune Solaire',   hsl: '48 96% 50%',  accentHsl: '48 90% 90%',  foregroundHsl: '0 0% 100%', className: 'bg-[#FFC700]', color: '#FFC700' },
+  { name: 'Bleu Royal',      hsl: '213 78% 57%', accentHsl: '213 70% 92%', foregroundHsl: '0 0% 100%', className: 'bg-[#4B8BE5]', color: '#4B8BE5' },
+  { name: 'Violet Mystique', hsl: '266 78% 57%', accentHsl: '266 70% 92%', foregroundHsl: '0 0% 100%', className: 'bg-[#8A4BE5]', color: '#8A4BE5' },
+  { name: 'Café Intense',    hsl: '25 40% 35%',  accentHsl: '25 40% 85%',  foregroundHsl: '0 0% 100%', className: 'bg-[#855D4A]', color: '#855D4A' },
+  { name: 'Gris Sidéral',    hsl: '240 5% 50%',  accentHsl: '240 5% 90%',  foregroundHsl: '0 0% 100%', className: 'bg-[#808080]', color: '#808080' },
+  { name: 'Noir Onyx',       hsl: '240 10% 11%', accentHsl: '240 5% 20%',  foregroundHsl: '0 0% 100%', className: 'bg-[#1C1C1E]', color: '#1C1C1E' },
 ];
 
 interface ThemeSelectorProps {

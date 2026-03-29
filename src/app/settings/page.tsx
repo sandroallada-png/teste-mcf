@@ -133,11 +133,7 @@ export default function SettingsPage() {
             }
         }
         if (userProfile) {
-            if (isTrainingEnabled) {
-                setPersonality(userProfile);
-            } else {
-                setPersonality(defaultPersonality);
-            }
+            setPersonality(userProfile);
             setMainObjective(userProfile.mainObjective || '');
             setLanguage(userProfile.language || 'system');
             if (userProfile.language && userProfile.language !== 'system') {
@@ -681,11 +677,11 @@ export default function SettingsPage() {
                                                 })
                                             </SelectItem>
                                             <SelectItem value="fr">Français (France)</SelectItem>
-                                            <SelectItem value="en">English (US) - En cours d'évolution</SelectItem>
-                                            <SelectItem value="de" disabled>Deutsch (Bientôt dispo)</SelectItem>
-                                            <SelectItem value="it" disabled>Italiano (Bientôt dispo)</SelectItem>
-                                            <SelectItem value="es" disabled>Español (Bientôt dispo)</SelectItem>
-                                            <SelectItem value="pt" disabled>Português (Bientôt dispo)</SelectItem>
+                                            <SelectItem value="en">English (US) - Under development</SelectItem>
+                                            <SelectItem value="de" disabled>Deutsch (Demnächst verfügbar)</SelectItem>
+                                            <SelectItem value="it" disabled>Italiano (A breve disponibile)</SelectItem>
+                                            <SelectItem value="es" disabled>Español (Próximamente)</SelectItem>
+                                            <SelectItem value="pt" disabled>Português (Em breve)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
