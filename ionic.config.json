@@ -1,0 +1,8 @@
+{
+  "name": "my-cook-flex",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "custom",
+  "id": "85bae6a3"
+}
