@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "769390935626",
+    "project_id": "my-cook-flex",
+    "storage_bucket": "my-cook-flex.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:769390935626:android:10a4d4452083c66c7f70b3",
+        "android_client_info": {
+          "package_name": "my.cook.flex"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "769390935626-5e790tuh4h8djmjdk3n74uqnrk6c7kdb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "my.cook.flex",
+            "certificate_hash": "83b6c616f169f41b05ec477074027f6f9dc478a4"
+          }
+        },
+        {
+          "client_id": "769390935626-kc52vm252rqdsqsu2f5oefr1n1ja7fjv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "my.cook.flex",
+            "certificate_hash": "a14a718188f98cd8b3b441802e65c1b6dbc8c919"
+          }
+        },
+        {
+          "client_id": "769390935626-chl6coakt4h1id1fkcet2m1u4bbtrajo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDUxZ1cpxdZY9wT2zitDBz1Sl1rwNlY6c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "769390935626-chl6coakt4h1id1fkcet2m1u4bbtrajo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

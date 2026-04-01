@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Couleur de fond du splash screen - doit correspondre au background du NativeSplashScreen React (#0a0a0a) -->
+    <color name="splash_background">#0a0a0a</color>
+
+    <!-- Couleurs de l'application -->
+    <color name="colorPrimary">#2E7D32</color>
+    <color name="colorPrimaryDark">#1B5E20</color>
+    <color name="colorAccent">#F59E0B</color>
+</resources>

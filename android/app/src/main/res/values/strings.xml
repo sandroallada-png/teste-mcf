@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">My Cook Flex</string>
+    <string name="title_activity_main">My Cook Flex</string>
+    <string name="package_name">my.cook.flex</string>
+    <string name="custom_url_scheme">my.cook.flex</string>
+    <string name="server_client_id">769390935626-chl6coakt4h1id1fkcet2m1u4bbtrajo.apps.googleusercontent.com</string>
+</resources>
