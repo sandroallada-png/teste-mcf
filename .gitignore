@@ -49,8 +49,7 @@ PROJECT_ANALYSIS.md
 # USER_MANUAL.md → versionné intentionnellement (utilisé par l'IA)
 
 # Native platforms
-/android/
-/ios/
+# (Managed by Capacitor)
 
 # Project specific
 /how --pretty=fuller -s
