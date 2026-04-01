@@ -16,6 +16,11 @@ const config: CapacitorConfig = {
       keystoreAliasPassword: undefined,
     }
   },
+  ios: {
+    buildOptions: {
+      developmentTeam: 'KV825CMDG7',
+    }
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 0,
