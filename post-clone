@@ -1,7 +1,21 @@
 #!/bin/bash
-echo "--- Appflow Post-Clone Hook Start ---"
-# Make scripts executable
-chmod +x scripts/fix-ios-signing.sh
-# Run the script
-./scripts/fix-ios-signing.sh
-echo "--- Appflow Post-Clone Hook End ---"
+echo "--- MCF CUSTOM SIGNING FIX START ---"
+
+# Display files for debugging
+ls -R ios/App/App.xcodeproj
+
+# 1. Force Team ID
+echo "Setting Team ID to KV825CMDG7..."
+sed -i '' 's/DEVELOPMENT_TEAM = "";/DEVELOPMENT_TEAM = "KV825CMDG7";/g' ios/App/App.xcodeproj/project.pbxproj
+sed -i '' 's/DEVELOPMENT_TEAM = [A-Z0-9]*;/DEVELOPMENT_TEAM = KV825CMDG7;/g' ios/App/App.xcodeproj/project.pbxproj
+
+# 2. Force Manual Signing
+echo "Setting Manual Sign Style..."
+sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' ios/App/App.xcodeproj/project.pbxproj
+
+# 3. Disable Signing for all dependency targets (SPM)
+# This is the MIRACLE line to fix Firebase/Facebook signing errors
+echo "Disabling signing for dependencies..."
+sed -i '' 's/CODE_SIGNING_ALLOWED = YES/CODE_SIGNING_ALLOWED = NO/g' ios/App/App.xcodeproj/project.pbxproj
+
+echo "--- MCF CUSTOM SIGNING FIX END ---"
