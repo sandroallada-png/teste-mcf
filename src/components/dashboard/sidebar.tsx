@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Lightbulb, Loader2, Sparkles, Target, User, Activity, Calendar, Refrigerator, BarChart2, Star, History, ShoppingCart, MessageSquare, Bot, Save, LayoutDashboard, Trophy, ChefHat, Shield, UtensilsCrossed, Edit, Package, Library } from 'lucide-react';
 import type { Meal } from '@/lib/types';
-import { getTipsAction } from '@/app/actions';
+import { getApiUrl } from '@/lib/api-utils';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '../icons';
@@ -94,15 +94,20 @@ export function Sidebar({ goals, setGoals, meals, isMobile = false }: SidebarPro
     setTips('');
     const foodLogs = meals.map(m => `${m.name} (${m.calories} kcal)`).join(', ');
     try {
-      const { tips: newTips, error } = await getTipsAction({
-        foodLogs: foodLogs || 'Aucun aliment enregistré aujourd\'hui.',
-        dietaryGoals: goals,
+      const response = await fetch(getApiUrl('/api/ai/provide-dietary-tips'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          foodLogs: foodLogs || 'Aucun aliment enregistré aujourd\'hui.',
+          dietaryGoals: goals,
+        }),
       });
+      const data = await response.json();
 
-      if (error) {
-        throw new Error(error);
-      } else if (newTips) {
-        setTips(newTips);
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de la récupération des conseils');
+      } else if (data.tips) {
+        setTips(data.tips);
       }
     } catch (e: any) {
       toast({

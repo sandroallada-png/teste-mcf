@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { useUser, useFirebase, useDoc, useMemoFirebase, useCollection } from '@/firebase';
 import { doc, collection, query, limit, where, Timestamp } from 'firebase/firestore';
 import type { UserProfile, DayPlanMeal, AIPersonality, Cooking, Meal, FridgeItem } from '@/lib/types';
-import { suggestDayPlanAction, getSingleMealSuggestionAction } from '@/app/actions';
+import { getApiUrl } from '@/lib/api-utils';
 import { startOfDay, endOfDay } from 'date-fns';
 import Image from 'next/image';
 
@@ -106,13 +106,18 @@ export function MobileBottomNav() {
                     preferences: userProfile.preferences,
                 };
             }
-            const { plan, error } = await suggestDayPlanAction({
-                dietaryGoals: goals,
-                personality,
-                householdMembers: userProfile.household || [],
+            const response = await fetch(getApiUrl('/api/ai/suggest-day-plan'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    dietaryGoals: goals,
+                    personality,
+                    householdMembers: userProfile.household || [],
+                }),
             });
-            if (error) throw new Error(error);
-            setDayPlan(plan || []);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Failed to fetch plan');
+            setDayPlan(data.plan || []);
             setPlanFetched(true);
         } catch {
             setDayPlan([]);
@@ -198,16 +203,20 @@ export function MobileBottomNav() {
                 };
             }
 
-            const { suggestion, error } = await getSingleMealSuggestionAction({
-                timeOfDay,
-                dietaryGoals: goals,
-                personality,
-                mealHistory: historyItems?.map(m => m.name),
+            const response = await fetch(getApiUrl('/api/ai/suggest-single-meal'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    timeOfDay,
+                    dietaryGoals: goals,
+                    personality,
+                    mealHistory: historyItems?.map(m => m.name),
+                }),
             });
-
-            if (error) throw new Error(error);
-            if (suggestion) {
-                setMagicSuggestion(suggestion as DayPlanMeal);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Failed to fetch suggestion');
+            if (data.suggestion) {
+                setMagicSuggestion(data.suggestion as DayPlanMeal);
             }
         } catch (e) {
             console.error("Magic generation failed:", e);

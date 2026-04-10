@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
-import { getSuggestionsAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Lightbulb, Loader2, Sparkles, UtensilsCrossed, Flame, Info, ChevronRight, Check, ArrowRightLeft } from 'lucide-react';
 import type { Meal } from '@/lib/types';
@@ -19,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import Image from 'next/image';
+import { getApiUrl } from '@/lib/api-utils';
 
 interface SuggestionsDialogProps {
   meal: Omit<Meal, 'id' | 'date'> & { id?: string };
@@ -107,16 +107,22 @@ export function SuggestionsDialog({
     setIsLoading(true);
     setSuggestions([]);
     setImageErrors({});
-    const { suggestions: newSuggestions, error } = await getSuggestionsAction({
-      loggedFood: meal.name,
-      healthGoals: goals,
-    });
-    setIsLoading(false);
-
-    if (error) {
-      toast({ variant: 'destructive', title: 'Erreur', description: error });
-    } else if (newSuggestions) {
-      setSuggestions(newSuggestions);
+    try {
+        const response = await fetch(getApiUrl('/api/ai/suggest-healthy-replacements'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                loggedFood: meal.name,
+                healthGoals: goals,
+            }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Erreur lors de la récupération des suggestions');
+        setSuggestions(data.suggestions || []);
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Erreur', description: error.message });
+    } finally {
+        setIsLoading(false);
     }
   };
 

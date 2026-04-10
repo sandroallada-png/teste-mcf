@@ -4,81 +4,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { chatAction, generateTitleAction } from '@/app/actions';
-import { cn } from '@/lib/utils';
-import { Send, Loader2, BotMessageSquare, User, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useUser, useFirebase, useDoc, useMemoFirebase, addDocumentNonBlocking, useCollection } from '@/firebase';
-import { collection, addDoc, serverTimestamp, updateDoc, doc, query, orderBy, limit, where, Timestamp } from 'firebase/firestore';
-import ReactMarkdown from 'react-markdown';
-import { MealPlanCard } from './meal-plan-card';
-import type { MealPlan, AIPersonality, Meal, FridgeItem, Cooking, UserProfile } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
-import { format, startOfDay, endOfDay } from 'date-fns';
-
-const TypewriterText = ({ text, onComplete }: { text: string; onComplete?: () => void }) => {
-    const [displayedText, setDisplayedText] = useState('');
-    const [index, setIndex] = useState(0);
-
-    useEffect(() => {
-        if (index < text.length) {
-            const timer = setTimeout(() => {
-                // Afficher par blocs de 5 caractères pour simuler un rendu par ligne plus rapide
-                const nextIndex = Math.min(index + 5, text.length);
-                setDisplayedText(text.substring(0, nextIndex));
-                setIndex(nextIndex);
-            }, 5); // Très rapide pour un effet fluide par blocs
-            return () => clearTimeout(timer);
-        } else {
-            onComplete?.();
-        }
-    }, [index, text, onComplete]);
-
-    return (
-        <ReactMarkdown
-            className="prose prose-sm dark:prose-invert max-w-none prose-p:text-inherit"
-            components={{
-                p: ({ node, ...props }) => <p className="mb-0 leading-relaxed" {...props} />,
-            }}
-        >
-            {displayedText}
-        </ReactMarkdown>
-    );
-};
-
-type Message = {
-    role: 'user' | 'ai';
-    text: string;
-};
-
-interface ConversationDoc {
-    messages: Message[];
-    title: string;
-}
-
-interface ChatInterfaceProps {
-    conversationId: string | null;
-    setConversationId: (id: string | null) => void;
-}
-
-const parseMealPlan = (text: string): { intro: string, plan: MealPlan | null } => {
-    const regex = /```json-meal-plan\s*([\s\S]*?)\s*```/;
-    const match = text.match(regex);
-
-    if (!match || !match[1]) {
-        return { intro: text, plan: null };
-    }
-
-    try {
-        const plan = JSON.parse(match[1]);
-        const intro = text.replace(regex, '').trim();
-        return { intro, plan };
-    } catch (e) {
-        console.error("Failed to parse meal plan JSON:", e);
-        return { intro: text, plan: null };
-    }
-};
-
+import { getApiUrl } from '@/lib/api-utils';
 
 export function ChatInterface({ conversationId, setConversationId }: ChatInterfaceProps) {
     const { user } = useUser();
@@ -202,10 +128,19 @@ export function ChatInterface({ conversationId, setConversationId }: ChatInterfa
     const handleGenerateTitle = async (convId: string, finalMessages: Message[]) => {
         if (!user || !firestore || finalMessages.length < 2) return;
 
-        const { title } = await generateTitleAction({ messages: finalMessages.slice(0, 4) });
-        if (title) {
-            const convRef = doc(firestore, 'users', user.uid, 'conversations', convId);
-            await updateDoc(convRef, { title });
+        try {
+            const response = await fetch(getApiUrl('/api/ai/generate-title'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages: finalMessages.slice(0, 4) }),
+            });
+            const data = await response.json();
+            if (data.title) {
+                const convRef = doc(firestore, 'users', user.uid, 'conversations', convId);
+                await updateDoc(convRef, { title: data.title });
+            }
+        } catch (e) {
+            console.error("Failed to generate title:", e);
         }
     };
 
@@ -255,20 +190,26 @@ export function ChatInterface({ conversationId, setConversationId }: ChatInterfa
                 };
             }
 
-            const response = await chatAction({
-                message: currentInput,
-                history: messages, // On envoie l'historique actuel
-                userName: userProfile?.name || user?.displayName || undefined,
-                personality: personality,
-                mealHistory: mealHistory,
-                fridgeContents: fridgeContents,
-                userLevel: userProfile?.level,
-                plannedMeals: plannedMeals?.map(m => ({ name: m.name, date: format(m.plannedFor.toDate(), 'yyyy-MM-dd') })),
-                householdMembers: householdMembers,
-                todaysCooks: todaysCooks,
-                isAITrainingEnabled: userProfile?.isAITrainingEnabled,
+            const response = await fetch(getApiUrl('/api/ai/chat'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: currentInput,
+                    history: messages,
+                    userName: userProfile?.name || user?.displayName || undefined,
+                    personality: personality,
+                    mealHistory: mealHistory,
+                    fridgeContents: fridgeContents,
+                    userLevel: userProfile?.level,
+                    plannedMeals: plannedMeals?.map(m => ({ name: m.name, date: format(m.plannedFor.toDate(), 'yyyy-MM-dd') })),
+                    householdMembers: householdMembers,
+                    todaysCooks: todaysCooks,
+                    isAITrainingEnabled: userProfile?.isAITrainingEnabled,
+                }),
             });
-            const textResponse = typeof response === 'string' ? response : (response as any).message || "Désolé, une erreur technique est survenue.";
+
+            const data = await response.json();
+            const textResponse = typeof data === 'string' ? data : data.message || "Désolé, une erreur technique est survenue.";
             const aiResponse: Message = { role: 'ai', text: textResponse };
             const finalMessages = [...newMessages, aiResponse];
             setMessages(finalMessages);

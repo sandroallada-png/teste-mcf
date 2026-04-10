@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect, useMemo } from "react";
 import { collection, query, where, getDocs, Timestamp, getCountFromServer } from 'firebase/firestore';
 import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
-import { generateReminderMessageAction } from '@/app/actions';
+import { getApiUrl } from '@/lib/api-utils';
 import type { GenerateReminderOutput, UserProfile } from '@/lib/types';
 import { format, subDays, startOfMonth, endOfMonth, eachMonthOfInterval, startOfDay, endOfDay, eachDayOfInterval } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -197,12 +197,17 @@ export function FollowUpSection() {
         setIsGenerating(true);
         setGeneratedMessage(null);
         try {
-            const { message, error } = await generateReminderMessageAction({
-                type: messageType,
-                userSegment,
+            const response = await fetch(getApiUrl('/api/ai/generate-reminder'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: messageType,
+                    userSegment,
+                }),
             });
-            if (error) throw new Error(error);
-            setGeneratedMessage(message);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Erreur lors de la génération du message');
+            setGeneratedMessage(data.message);
         } catch (e: any) {
             toast({
                 variant: "destructive",

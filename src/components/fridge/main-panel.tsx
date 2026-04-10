@@ -20,33 +20,7 @@ import { PlusCircle, Refrigerator, X, Sparkles, Loader2, Bot, ShoppingCart, Chef
 import { useUser, useFirebase, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, doc, serverTimestamp, query, orderBy, Timestamp } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
-
-import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { Input } from '../ui/input';
-import { getRecipesFromIngredientsAction } from '@/app/actions';
-import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
-import { Badge } from '@/components/ui/badge';
-import { useReadOnly } from '@/contexts/read-only-context';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/select';
-
-const COMMON_INGREDIENTS = [
-    { category: 'Protéines', items: ['Œufs', 'Poulet', 'Steak haché', 'Saumon', 'Jambon', 'Tofu'] },
-    { category: 'Légumes', items: ['Tomates', 'Oignons', 'Carottes', 'Courgettes', 'Épinards', 'Salade'] },
-    { category: 'Féculents', items: ['Riz', 'Pâtes', 'Pommes de terre', 'Pain', 'Quinoa'] },
-    { category: 'Produits Laitiers', items: ['Lait', 'Emmental', 'Beurre', 'Yaourt', 'Crème fraîche'] },
-];
-
-interface FridgeItem {
-    id: string;
-    name: string;
-}
-
-interface RecipeSuggestion {
-    name: string;
-    description: string;
-    missingIngredients: string[];
-}
+import { getApiUrl } from '@/lib/api-utils';
 
 export function MainPanel() {
     const { user } = useUser();
@@ -99,13 +73,27 @@ export function MainPanel() {
         setIsLoadingSuggestions(true);
         setSuggestions([]);
         const ingredientNames = ingredients.map(i => i.name);
-        const { recipes, error } = await getRecipesFromIngredientsAction({ ingredients: ingredientNames });
-        setIsLoadingSuggestions(false);
-
-        if (error) {
-            toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de générer des suggestions.' });
-        } else {
-            setSuggestions(recipes || []);
+        try {
+            const response = await fetch(getApiUrl('/api/ai/recipes-from-ingredients'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ingredients: ingredientNames }),
+            });
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Erreur lors de la génération des suggestions.');
+            } else {
+                setSuggestions(data.recipes || []);
+            }
+        } catch (e: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Erreur',
+                description: e.message || 'Impossible de générer des suggestions.',
+            });
+        } finally {
+            setIsLoadingSuggestions(false);
         }
     };
 

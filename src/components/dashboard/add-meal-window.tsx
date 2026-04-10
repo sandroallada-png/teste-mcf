@@ -38,7 +38,7 @@ import { ImageZoomLightbox } from '../shared/image-zoom-lightbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, limit, getDocs, deleteDoc, Timestamp, addDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
-import { getSingleMealSuggestionAction } from '@/app/actions';
+import { getApiUrl } from '@/lib/api-utils';
 import type { Dish, Meal, SingleMealSuggestion } from '@/lib/types';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useTranslation } from 'react-i18next';
@@ -370,17 +370,21 @@ export function AddMealWindow({ isOpen, onClose, onSubmit, household = [], userI
             else if (hour < 18) timeOfDay = 'dessert';
             else timeOfDay = 'soir';
 
-            const { suggestion, error } = await getSingleMealSuggestionAction({
-                dietaryGoals: "Manger équilibré", // You might want to pass actual user goals if available
-                timeOfDay: timeOfDay,
-                // personality: ... (optional)
+            const response = await fetch(getApiUrl('/api/ai/suggest-single-meal'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    dietaryGoals: "Manger équilibré",
+                    timeOfDay: timeOfDay,
+                }),
             });
+            const data = await response.json();
 
-            if (error || !suggestion) {
-                throw new Error(error || "Aucune suggestion trouvée");
+            if (!response.ok || !data.suggestion) {
+                throw new Error(data.error || "Aucune suggestion trouvée");
             }
 
-            setSuggestedAlternative(suggestion);
+            setSuggestedAlternative(data.suggestion);
         } catch (error) {
             console.error("Alternative search failed:", error);
             toast({
