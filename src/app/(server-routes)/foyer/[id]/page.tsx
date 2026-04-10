@@ -6,6 +6,10 @@ import { useFirebase } from '@/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { Loader2, ChefHat, Users } from 'lucide-react';
 
+export function generateStaticParams() {
+    return [{ id: 'placeholder' }];
+}
+
 export default function FoyerPage() {
     const { id } = useParams();
     const { firestore } = useFirebase();

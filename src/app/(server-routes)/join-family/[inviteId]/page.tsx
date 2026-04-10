@@ -23,10 +23,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { getInviteAction } from '@/app/actions';
+export function generateStaticParams() {
+    return [{ inviteId: 'placeholder' }];
+}
 
 export default function JoinFamilyPage() {
-    const { inviteId } = useParams();
+    const params = useParams();
+    const inviteId = params?.inviteId;
     const router = useRouter();
     const { auth, firestore } = useFirebase();
     const { toast } = useToast();
@@ -58,24 +61,38 @@ export default function JoinFamilyPage() {
 
     useEffect(() => {
         const fetchInvite = async () => {
-            if (!inviteId) return;
+            if (!inviteId || inviteId === 'placeholder') return;
             setIsLoading(true);
             try {
-                const { invite: inviteData, error: inviteError } = await getInviteAction(inviteId as string);
-                if (inviteError || !inviteData) {
-                    setError(inviteError || 'Invitation introuvable');
+                // Direct Firestore call instead of server action for static export compatibility
+                const inviteRef = doc(firestore, 'invites', inviteId as string);
+                const inviteSnap = await getDoc(inviteRef);
+
+                if (!inviteSnap.exists()) {
+                    setError('Invitation introuvable');
                 } else {
-                    setInvite(inviteData);
-                    setName((inviteData as any).name);
+                    const data = inviteSnap.data();
+                    const expiresAt = data.expiresAt.toDate();
+                    if (expiresAt < new Date()) {
+                        setError('Invitation expirée');
+                    } else {
+                        const serializableInvite = {
+                            ...data,
+                            id: inviteSnap.id,
+                        };
+                        setInvite(serializableInvite);
+                        setName(data.name || '');
+                    }
                 }
             } catch (e) {
+                console.error(e);
                 setError("Impossible de charger l'invitation.");
             } finally {
                 setIsLoading(false);
             }
         };
         signOut(auth).then(() => fetchInvite());
-    }, [inviteId, auth]);
+    }, [inviteId, auth, firestore]);
 
     const handleJoin = async (e: React.FormEvent) => {
         e.preventDefault();

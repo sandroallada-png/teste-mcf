@@ -89,6 +89,10 @@ function RecipeContent({ markdown }: { markdown: string }) {
     );
 }
 
+export function generateStaticParams() {
+    return [{ id: 'placeholder' }];
+}
+
 export default function RecipeDetailPage() {
     const { id } = useParams();
     const router = useRouter();
