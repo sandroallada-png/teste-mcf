@@ -341,7 +341,7 @@ Top level ::Parts is deprecated, require 'multipart/post' and use `Multipart::Po
 | 17   | detect_ios_package_manager   | 0           |
 | 18   | get_web_dir                  | 0           |
 | 19   | modify_cap_web_config        | 0           |
-| 💥   | build_pro_app                | 27          |
+| 💥   | build_pro_app                |27          |
 | 21   | upload_logs                  | 3           |
 | 22   | sentry_capture_exception     | 0           |
 | 23   | shell command                | 0           |
