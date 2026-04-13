@@ -21,17 +21,11 @@ import type {
     GenerateReminderOutput,
 } from '@/lib/types';
 
-// Native implementations (Client-side stubs)
-// These functions are used when the app is built for native platforms (APK/iOS).
-// Instead of crashing or doing nothing, they now proxy the AI requests to the main PWA backend.
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Native AI Proxy — toutes les requêtes IA sont redirigées vers le backend PWA
-// ⚠️  Si le domaine change, mettez à jour cette constante.
-// ──────────────────────────────────────────────────────────────────────────────
-// Utiliser en permanence l'URL de la PWA (production) qui sert de backend à l'APK.
-// NE JAMAIS UTILISER L'IP LOCALE ICI ! L'APK s'appuie sur la PWA en ligne.
-const API_URL = 'https://app.mycookflex.com';
+// Déterminer l'URL de l'API dynamiquement
+// Sur le Web, on utilise une URL relative ('')
+// Sur Mobile (Capacitor), on doit utiliser l'URL absolue de la production
+const isNative = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform();
+const API_URL = isNative ? 'https://app.mycookflex.com' : '';
 
 export async function getSuggestionsAction(
     input: SuggestHealthyReplacementsInput

@@ -33,7 +33,7 @@ import type {
 export async function getSuggestionsAction(
     input: SuggestHealthyReplacementsInput
 ) {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { getSuggestionsAction } = await import('./actions.native');
         return getSuggestionsAction(input);
     }
@@ -48,7 +48,7 @@ export async function getSuggestionsAction(
 }
 
 export async function getTipsAction(input: ProvidePersonalizedDietaryTipsInput) {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { getTipsAction } = await import('./actions.native');
         return getTipsAction(input);
     }
@@ -63,7 +63,7 @@ export async function getTipsAction(input: ProvidePersonalizedDietaryTipsInput) 
 }
 
 export async function chatAction(input: NutritionalAgentChatInput) {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { chatAction } = await import('./actions.native');
         return chatAction(input);
     }
@@ -72,7 +72,7 @@ export async function chatAction(input: NutritionalAgentChatInput) {
 }
 
 export async function generateTitleAction(input: GenerateConversationTitleInput) {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { generateTitleAction } = await import('./actions.native');
         return generateTitleAction(input);
     }
@@ -89,7 +89,7 @@ export async function generateTitleAction(input: GenerateConversationTitleInput)
 export async function getRecipesFromIngredientsAction(
     input: SuggestRecipesFromIngredientsInput
 ) {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { getRecipesFromIngredientsAction } = await import('./actions.native');
         return getRecipesFromIngredientsAction(input);
     }
@@ -106,7 +106,7 @@ export async function getRecipesFromIngredientsAction(
 export async function getMealPlanAction(
     input: SuggestMealPlanInput
 ): Promise<{ mealPlan: SuggestMealPlanOutput | null; error: string | null }> {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { getMealPlanAction } = await import('./actions.native');
         return getMealPlanAction(input);
     }
@@ -123,7 +123,7 @@ export async function getMealPlanAction(
 export async function getSingleMealSuggestionAction(
     input: SuggestSingleMealInput
 ): Promise<{ suggestion: SingleMealSuggestion | null; error: string | null }> {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { getSingleMealSuggestionAction } = await import('./actions.native');
         return getSingleMealSuggestionAction(input);
     }
@@ -140,7 +140,7 @@ export async function getSingleMealSuggestionAction(
 export async function estimateCaloriesAction(
     input: EstimateCaloriesInput
 ): Promise<EstimateCaloriesOutput & { error: string | null }> {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { estimateCaloriesAction } = await import('./actions.native');
         return estimateCaloriesAction(input);
     }
@@ -157,7 +157,7 @@ export async function estimateCaloriesAction(
 export async function getMotivationalMessageAction(
     input: GetMotivationalMessageInput
 ): Promise<{ message: GetMotivationalMessageOutput | null; error: string | null }> {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { getMotivationalMessageAction } = await import('./actions.native');
         return getMotivationalMessageAction(input);
     }
@@ -174,7 +174,7 @@ export async function getMotivationalMessageAction(
 export async function generateRecipeAction(
     input: GenerateRecipeInput
 ): Promise<{ recipe: GenerateRecipeOutput | null; error: string | null }> {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { generateRecipeAction } = await import('./actions.native');
         return generateRecipeAction(input);
     }
@@ -191,7 +191,7 @@ export async function generateRecipeAction(
 export async function suggestDayPlanAction(
     input: SuggestDayPlanInput
 ): Promise<{ plan: SuggestDayPlanOutput | null; error: string | null }> {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { suggestDayPlanAction } = await import('./actions.native');
         return suggestDayPlanAction(input);
     }
@@ -208,7 +208,7 @@ export async function suggestDayPlanAction(
 export async function generateReminderMessageAction(
     input: GenerateReminderInput
 ): Promise<{ message: GenerateReminderOutput | null; error: string | null }> {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { generateReminderMessageAction } = await import('./actions.native');
         return generateReminderMessageAction(input);
     }
@@ -225,7 +225,7 @@ export async function generateReminderMessageAction(
 export async function generateShoppingListAction(
     input: GenerateShoppingListInput
 ): Promise<{ list: GenerateShoppingListOutput | null; error: string | null }> {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { generateShoppingListAction } = await import('./actions.native');
         return generateShoppingListAction(input);
     }
@@ -242,7 +242,7 @@ export async function generateShoppingListAction(
 export async function getRecommendedDishesAction(
     input: SuggestRecommendedDishesInput
 ): Promise<{ recommendations: SuggestRecommendedDishesOutput | null; error: string | null }> {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { getRecommendedDishesAction } = await import('./actions.native');
         return getRecommendedDishesAction(input);
     }
@@ -263,7 +263,7 @@ export async function trackInteractionAction(
     dishCategory: string,
     eventType: 'view' | 'cook_start' | 'cook_complete' | 'like' | 'dislike'
 ) {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { trackInteractionAction } = await import('./actions.native');
         return trackInteractionAction(userId, dishName, dishOrigin, dishCategory, eventType);
     }
@@ -278,7 +278,7 @@ export async function trackInteractionAction(
 }
 
 export async function getInviteAction(inviteId: string) {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { getInviteAction } = await import('./actions.native');
         return getInviteAction(inviteId);
     }
@@ -317,7 +317,7 @@ export async function getInviteAction(inviteId: string) {
 export async function explainCalorieGoalAction(
     input: ExplainCalorieGoalInput
 ): Promise<{ explanation: string | null; error: string | null }> {
-    if (process.env.NEXT_PUBLIC_IS_STATIC_EXPORT === 'true') {
+    if (typeof window !== 'undefined') {
         const { explainCalorieGoalAction } = await import('./actions.native');
         return explainCalorieGoalAction(input);
     }
