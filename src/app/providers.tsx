@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import '@/lib/i18n';
 
 import { ThemeProvider } from '@/components/theme-provider';
