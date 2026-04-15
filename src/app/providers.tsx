@@ -26,6 +26,44 @@ import ErrorBoundary from '@/components/shared/error-boundary';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useNativeBack();
+
+  useEffect(() => {
+    // 1. Enregistrement du Super-Service Worker pour le cache local
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw-mcf.js').then((reg) => {
+          console.log('[SW] Service Worker MCF activé et prêt !', reg.scope);
+          // Forcer le cache initial en arrière-plan
+          reg.active?.postMessage('CACHE_ALL');
+        }).catch((err) => {
+          console.error('[SW] Échec de l\'activation :', err);
+        });
+      });
+    }
+
+    // 2. Le "Leurre" Apple : Demander les accès natifs dès le début
+    const requestNativeAccess = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          // Note: On importe dynamiquement les plugins pour ne pas casser le web
+          const { Camera } = await import('@capacitor/camera');
+          const { PushNotifications } = await import('@capacitor/push-notifications');
+          
+          // Demander Camera + Photos
+          await Camera.requestPermissions();
+          // Demander Notifications
+          await PushNotifications.requestPermissions();
+          
+          console.log('[Native] Accès matériel demandés avec succès !');
+        } catch (e) {
+          console.warn('[Native] Erreur lors de la demande d\'accès (normal sur Web) :', e);
+        }
+      }
+    };
+
+    requestNativeAccess();
+  }, []);
+
   return (
     <FirebaseClientProvider>
       <DexieSyncManager />

@@ -5,7 +5,10 @@ const config: CapacitorConfig = {
   appName: 'My Cook Flex',
   webDir: 'out',
   server: {
+    url: 'https://app.mycookflex.com',
+    allowNavigation: ['app.mycookflex.com'],
     androidScheme: 'https',
+    iosScheme: 'https',
     cleartext: true
   },
   android: {
