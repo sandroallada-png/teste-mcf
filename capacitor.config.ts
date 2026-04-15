@@ -1,4 +1,5 @@
 import { CapacitorConfig } from '@capacitor/cli';
+// MCF Super-Hybrid Version: 1.0.4 - 2026-04-15
 
 const config: CapacitorConfig = {
   appId: 'my.cook.flex',
