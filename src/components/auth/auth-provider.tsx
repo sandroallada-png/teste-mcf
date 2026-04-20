@@ -10,6 +10,7 @@ import { useFirebase } from '@/firebase';
 
 const AUTH_COOKIE = 'mcf_auth';
 const ADMIN_EMAIL = 'maxyculture11@gmail.com';
+const APP_VERSION = '1.0.1-onboarding-fix-2026-04-20';
 
 // Routes publiques (pas de redirection vers login)
 const PUBLIC_ROUTES = [
@@ -128,14 +129,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               return;
           }
 
-          const hasBasicProfile = !!(data?.age && data?.country && data?.referralSource);
+          // --- FLUX DE REDIRECTION (iPhone & Web) ---
           const hasPersonalization = !!data?.theme;
           const hasPreferences = !!data?.mainObjective;
           const hasPricing = !!data?.subscriptionStatus;
           const hasAvatar = !!data?.avatarUrl;
           const isFamilyMember = !!data?.chefId;
-          const fullySetup = (hasBasicProfile && hasPersonalization && hasPreferences && hasPricing && hasAvatar) || isFamilyMember;
-
+          
+          const fullySetup = (hasPersonalization && hasPreferences && hasPricing && hasAvatar) || isFamilyMember;
           setIsFullySetup(fullySetup);
           setLoading(false);
           signalAppReady();
@@ -147,14 +148,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   router.replace('/admin');
               }
           } else if (isFamilyMember) {
-              if (isAuthRoute || ['/welcome', '/personalization', '/preferences', '/pricing', '/avatar-selection'].some(p => pathname.startsWith(p))) {
+              if (isAuthRoute || ['/personalization', '/preferences', '/pricing', '/avatar-selection'].some(p => pathname.startsWith(p))) {
                   router.replace('/dashboard');
               }
           } else {
-              // Onboarding logic
-              if (!hasBasicProfile && !pathname.startsWith('/welcome') && !pathname.startsWith('/register') && !pathname.startsWith('/join-family')) {
-                  router.replace('/welcome');
-              } else if (hasBasicProfile && !hasPersonalization && !pathname.startsWith('/personalization')) {
+              // --- FLUX UTILISATEUR CLASSIQUE (VOTRE RECONSTITUTION) ---
+              if (!hasPersonalization && !pathname.startsWith('/personalization') && !isAuthRoute) {
                   router.replace('/personalization');
               } else if (hasPersonalization && !hasPreferences && !pathname.startsWith('/preferences')) {
                   router.replace('/preferences');
@@ -162,8 +161,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   router.replace('/pricing');
               } else if (hasPricing && !hasAvatar && !pathname.startsWith('/avatar-selection')) {
                   router.replace('/avatar-selection');
-              } else if (fullySetup && (isAuthRoute || ['/welcome', '/personalization', '/preferences', '/pricing', '/avatar-selection'].some(p => pathname.startsWith(p)))) {
-                  router.replace('/dashboard');
+              } else if (fullySetup) {
+                  // Si tout est OK et qu'on essaie de retourner dans le flux, on renvoie au Dashboard
+                  if (isAuthRoute || ['/personalization', '/preferences', '/pricing', '/avatar-selection'].some(p => pathname.startsWith(p))) {
+                      router.replace('/dashboard?welcome=true');
+                  }
               }
           }
       });
@@ -178,6 +180,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Il reçoit le signal via signalAppReady() quand loading passe à false.
   // Plus besoin de return null ici — le splash couvre l'écran à la place.
 
+  // Sécurité Hybride : Si on doit rediriger, on n'affiche PAS les enfants (le dashboard)
+  // Cela évite les flashs et les boucles de rendu sur mobile.
+  if (user && !loading && !isFullySetup && !PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/')) && !pathname.startsWith('/personalization') && !pathname.startsWith('/preferences') && !pathname.startsWith('/pricing') && !pathname.startsWith('/avatar-selection')) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <AuthContext.Provider value={{ user, loading, userData, isFullySetup, firestore }}>
       <Suspense fallback={null}>
@@ -185,6 +197,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       </Suspense>
       {children}
     </AuthContext.Provider>
+  );
+}
+
+// Composant Loader simple pour l'auth
+function Loader2({ className }: { className?: string }) {
+  return (
+    <svg 
+      className={className} 
+      xmlns="http://www.w3.org/2000/svg" 
+      fill="none" 
+      viewBox="0 0 24 24"
+    >
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
   );
 }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { Capacitor } from '@capacitor/core';
 import { useAuthContext } from '@/components/auth/auth-provider';
 import { updateDoc, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -12,6 +13,12 @@ export function PushNotificationManager() {
     const [permission, setPermission] = useState<NotificationPermission>('default');
 
     useEffect(() => {
+        if (Capacitor.isNativePlatform()) {
+            // Sur mobile, c'est le code Swift qui gère ça, donc on arrête le code web ici
+            console.log('[Push] Native app detected, skipping Web Push registration.');
+            return;
+        }
+
         if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator)) {
             console.warn('Push notifications are not supported in this browser.');
             return;

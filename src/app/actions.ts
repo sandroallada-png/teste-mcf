@@ -1,6 +1,4 @@
 
-// AI flows are now imported dynamically within each action function to avoid bundling
-// server-side modules (like 'fs') into the client-side code during static export.
 import type {
     SuggestHealthyReplacementsInput,
     ProvidePersonalizedDietaryTipsInput,
@@ -21,238 +19,220 @@ import type {
     SuggestDayPlanOutput,
     GenerateReminderInput,
     GenerateReminderOutput,
-    GenerateShoppingListInput,
-    GenerateShoppingListOutput,
-    SuggestRecommendedDishesInput,
-    SuggestRecommendedDishesOutput,
-    ExplainCalorieGoalInput,
-    ExplainCalorieGoalOutput,
 } from '@/lib/types';
 
+// Déterminer l'URL de l'API dynamiquement
+// Sur le Web, on utilise une URL relative ('')
+// Sur Mobile (Capacitor), on doit utiliser l'URL absolue de la production
+const isNative = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform();
+const API_URL = isNative ? 'https://app.mycookflex.com' : '';
 
 export async function getSuggestionsAction(
     input: SuggestHealthyReplacementsInput
-) {
-    if (typeof window !== 'undefined') {
-        const { getSuggestionsAction } = await import('./actions.native');
-        return getSuggestionsAction(input);
-    }
+): Promise<{ suggestions: string[] | null; error: string | null }> {
     try {
-        const { suggestHealthyReplacements } = await import('@/ai/flows/suggest-healthy-replacements');
-        const result = await suggestHealthyReplacements(input);
-        return { suggestions: result.suggestions, error: null };
-    } catch (e) {
-        console.error(e);
-        return { suggestions: null, error: 'Failed to get suggestions.' };
+        const res = await fetch(`${API_URL}/api/ai/suggest-healthy-replacements`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
+        });
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
+    } catch (e: any) {
+        return { suggestions: null, error: e.message };
     }
 }
 
-export async function getTipsAction(input: ProvidePersonalizedDietaryTipsInput) {
-    if (typeof window !== 'undefined') {
-        const { getTipsAction } = await import('./actions.native');
-        return getTipsAction(input);
-    }
+export async function getTipsAction(
+    input: ProvidePersonalizedDietaryTipsInput
+): Promise<{ tips: string | null; error: string | null }> {
     try {
-        const { providePersonalizedDietaryTips } = await import('@/ai/flows/provide-personalized-dietary-tips');
-        const result = await providePersonalizedDietaryTips(input);
-        return { tips: result.tips, error: null };
-    } catch (e) {
-        console.error(e);
-        return { tips: null, error: 'Failed to get tips.' };
+        const res = await fetch(`${API_URL}/api/ai/provide-dietary-tips`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
+        });
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
+    } catch (e: any) {
+        return { tips: null, error: e.message };
     }
 }
 
-export async function chatAction(input: NutritionalAgentChatInput) {
-    if (typeof window !== 'undefined') {
-        const { chatAction } = await import('./actions.native');
-        return chatAction(input);
+export async function chatAction(
+    input: NutritionalAgentChatInput
+): Promise<string> {
+    try {
+        const res = await fetch(`${API_URL}/api/ai/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
+        });
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`Erreur serveur ${res.status} : ${errorText}`);
+        }
+        return await res.json();
+    } catch (e: any) {
+        return `Désolé, une erreur réseau est survenue lors de la communication avec le serveur (Détail: ${e.message}). Veuillez vérifier que le serveur ${API_URL} est bien accessible depuis votre téléphone.`;
     }
-    const { nutritionalAgentChat } = await import('@/ai/flows/nutritional-agent-chat');
-    return nutritionalAgentChat(input);
 }
 
-export async function generateTitleAction(input: GenerateConversationTitleInput) {
-    if (typeof window !== 'undefined') {
-        const { generateTitleAction } = await import('./actions.native');
-        return generateTitleAction(input);
-    }
+export async function generateTitleAction(
+    input: GenerateConversationTitleInput
+): Promise<{ title: string | null; error: string | null }> {
     try {
-        const { generateConversationTitle } = await import('@/ai/flows/generate-conversation-title');
-        const result = await generateConversationTitle(input);
-        return { title: result.title, error: null };
-    } catch (e) {
-        console.error(e);
-        return { title: null, error: 'Failed to generate title.' };
+        const res = await fetch(`${API_URL}/api/ai/generate-title`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
+        });
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
+    } catch (e: any) {
+        return { title: null, error: e.message };
     }
 }
 
 export async function getRecipesFromIngredientsAction(
     input: SuggestRecipesFromIngredientsInput
-) {
-    if (typeof window !== 'undefined') {
-        const { getRecipesFromIngredientsAction } = await import('./actions.native');
-        return getRecipesFromIngredientsAction(input);
-    }
+): Promise<{ recipes: any[] | null; error: string | null }> {
     try {
-        const { suggestRecipesFromIngredients } = await import('@/ai/flows/suggest-recipes-from-ingredients');
-        const result = await suggestRecipesFromIngredients(input);
-        return { recipes: result.recipes, error: null };
-    } catch (e) {
-        console.error(e);
-        return { recipes: null, error: 'Failed to get recipes.' };
+        const res = await fetch(`${API_URL}/api/ai/recipes-from-ingredients`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
+        });
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
+    } catch (e: any) {
+        return { recipes: null, error: e.message };
     }
 }
 
 export async function getMealPlanAction(
     input: SuggestMealPlanInput
 ): Promise<{ mealPlan: SuggestMealPlanOutput | null; error: string | null }> {
-    if (typeof window !== 'undefined') {
-        const { getMealPlanAction } = await import('./actions.native');
-        return getMealPlanAction(input);
-    }
     try {
-        const { suggestMealPlan } = await import('@/ai/flows/suggest-meal-plan');
-        const result = await suggestMealPlan(input);
-        return { mealPlan: result, error: null };
+        const res = await fetch(`${API_URL}/api/ai/generate-meal-plan`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
+        });
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
     } catch (e: any) {
-        console.error(e);
-        return { mealPlan: null, error: e.message || 'Failed to get meal plan.' };
+        return { mealPlan: null, error: e.message };
     }
 }
 
 export async function getSingleMealSuggestionAction(
     input: SuggestSingleMealInput
 ): Promise<{ suggestion: SingleMealSuggestion | null; error: string | null }> {
-    if (typeof window !== 'undefined') {
-        const { getSingleMealSuggestionAction } = await import('./actions.native');
-        return getSingleMealSuggestionAction(input);
-    }
     try {
-        const { suggestSingleMeal } = await import('@/ai/flows/suggest-single-meal');
-        const result = await suggestSingleMeal(input);
-        return { suggestion: result as SingleMealSuggestion, error: null };
-    } catch (e) {
-        console.error(e);
-        return { suggestion: null, error: 'Failed to get meal suggestion.' };
+        const res = await fetch(`${API_URL}/api/ai/suggest-single-meal`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
+        });
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
+    } catch (e: any) {
+        return { suggestion: null, error: e.message };
     }
 }
 
 export async function estimateCaloriesAction(
     input: EstimateCaloriesInput
 ): Promise<EstimateCaloriesOutput & { error: string | null }> {
-    if (typeof window !== 'undefined') {
-        const { estimateCaloriesAction } = await import('./actions.native');
-        return estimateCaloriesAction(input);
-    }
     try {
-        const { estimateCalories } = await import('@/ai/flows/estimate-calories');
-        const result = await estimateCalories(input);
-        return { ...result, error: null };
+        const res = await fetch(`${API_URL}/api/ai/estimate-calories`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
+        });
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
     } catch (e: any) {
-        console.error(e);
-        return { calories: 0, xpGained: 0, error: e.message || 'Failed to analyze meal.' };
+        return { calories: 0, xpGained: 0, error: e.message };
     }
 }
 
 export async function getMotivationalMessageAction(
     input: GetMotivationalMessageInput
 ): Promise<{ message: GetMotivationalMessageOutput | null; error: string | null }> {
-    if (typeof window !== 'undefined') {
-        const { getMotivationalMessageAction } = await import('./actions.native');
-        return getMotivationalMessageAction(input);
-    }
     try {
-        const { getMotivationalMessage } = await import('@/ai/flows/generate-motivational-message');
-        const result = await getMotivationalMessage(input);
-        return { message: result, error: null };
-    } catch (e) {
-        console.error(e);
-        return { message: null, error: 'Failed to get motivational message.' };
+        const res = await fetch(`${API_URL}/api/ai/get-motivational-message`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
+        });
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
+    } catch (e: any) {
+        return { message: null, error: e.message };
     }
 }
 
 export async function generateRecipeAction(
     input: GenerateRecipeInput
 ): Promise<{ recipe: GenerateRecipeOutput | null; error: string | null }> {
-    if (typeof window !== 'undefined') {
-        const { generateRecipeAction } = await import('./actions.native');
-        return generateRecipeAction(input);
-    }
     try {
-        const { generateRecipe } = await import('@/ai/flows/generate-recipe');
-        const result = await generateRecipe(input);
-        return { recipe: result, error: null };
-    } catch (e) {
-        console.error(e);
-        return { recipe: null, error: 'Failed to generate recipe.' };
+        const res = await fetch(`${API_URL}/api/ai/generate-recipe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
+        });
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
+    } catch (e: any) {
+        return { recipe: null, error: e.message };
     }
 }
 
 export async function suggestDayPlanAction(
     input: SuggestDayPlanInput
 ): Promise<{ plan: SuggestDayPlanOutput | null; error: string | null }> {
-    if (typeof window !== 'undefined') {
-        const { suggestDayPlanAction } = await import('./actions.native');
-        return suggestDayPlanAction(input);
-    }
     try {
-        const { suggestDayPlan } = await import('@/ai/flows/suggest-day-plan');
-        const result = await suggestDayPlan(input);
-        return { plan: result, error: null };
+        const res = await fetch(`${API_URL}/api/ai/suggest-day-plan`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
+        });
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
     } catch (e: any) {
-        console.error('Error in suggestDayPlanAction:', e);
-        return { plan: null, error: e.message || 'Failed to suggest day plan.' };
+        return { plan: null, error: e.message };
     }
 }
 
 export async function generateReminderMessageAction(
     input: GenerateReminderInput
 ): Promise<{ message: GenerateReminderOutput | null; error: string | null }> {
-    if (typeof window !== 'undefined') {
-        const { generateReminderMessageAction } = await import('./actions.native');
-        return generateReminderMessageAction(input);
-    }
     try {
-        const { generateReminderMessage } = await import('@/ai/flows/generate-reminder-message');
-        const result = await generateReminderMessage(input);
-        return { message: result, error: null };
+        const res = await fetch(`${API_URL}/api/ai/generate-reminder`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
+        });
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
     } catch (e: any) {
-        console.error('Error in generateReminderMessageAction:', e);
-        return { message: null, error: e.message || 'Failed to generate reminder message.' };
+        return { message: null, error: e.message };
     }
 }
 
-export async function generateShoppingListAction(
-    input: GenerateShoppingListInput
-): Promise<{ list: GenerateShoppingListOutput | null; error: string | null }> {
-    if (typeof window !== 'undefined') {
-        const { generateShoppingListAction } = await import('./actions.native');
-        return generateShoppingListAction(input);
-    }
+export async function getInviteAction(inviteId: string) {
     try {
-        const { generateShoppingList } = await import('@/ai/flows/generate-shopping-list');
-        const result = await generateShoppingList(input);
-        return { list: result, error: null };
+        const res = await fetch(`${API_URL}/api/ai/get-invite`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inviteId })
+        });
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
     } catch (e: any) {
-        console.error('Error in generateShoppingListAction:', e);
-        return { list: null, error: e.message || 'Failed to generate shopping list.' };
-    }
-}
-
-export async function getRecommendedDishesAction(
-    input: SuggestRecommendedDishesInput
-): Promise<{ recommendations: SuggestRecommendedDishesOutput | null; error: string | null }> {
-    if (typeof window !== 'undefined') {
-        const { getRecommendedDishesAction } = await import('./actions.native');
-        return getRecommendedDishesAction(input);
-    }
-    try {
-        const { suggestRecommendedDishes } = await import('@/ai/flows/suggest-recommended-dishes');
-        const result = await suggestRecommendedDishes(input);
-        return { recommendations: result, error: null };
-    } catch (e: any) {
-        console.error('Error in getRecommendedDishesAction:', e);
-        return { recommendations: null, error: e.message || 'Failed to get recommendations.' };
+        return { invite: null, error: e.message };
     }
 }
 
@@ -263,98 +243,75 @@ export async function trackInteractionAction(
     dishCategory: string,
     eventType: 'view' | 'cook_start' | 'cook_complete' | 'like' | 'dislike'
 ) {
-    if (typeof window !== 'undefined') {
-        const { trackInteractionAction } = await import('./actions.native');
-        return trackInteractionAction(userId, dishName, dishOrigin, dishCategory, eventType);
-    }
     try {
-        const { trackUserInteraction } = await import('@/ai/flows/suggest-recommended-dishes');
-        await trackUserInteraction(userId, dishName, dishOrigin, dishCategory, eventType);
-        return { success: true };
-    } catch (e) {
-        console.error("Action error trackInteractionAction", e);
-        return { success: false };
-    }
-}
-
-export async function getInviteAction(inviteId: string) {
-    if (typeof window !== 'undefined') {
-        const { getInviteAction } = await import('./actions.native');
-        return getInviteAction(inviteId);
-    }
-    try {
-        const { getFirestoreInstance } = await import('@/firebase/server-init');
-        const { doc, getDoc } = await import('firebase/firestore');
-        const firestore = await getFirestoreInstance();
-
-        const inviteRef = doc(firestore, 'invites', inviteId);
-        const inviteSnap = await getDoc(inviteRef);
-
-        if (!inviteSnap.exists()) {
-            return { invite: null, error: 'Invitation introuvable.' };
-        }
-
-        const data = inviteSnap.data();
-        const expiresAt = data.expiresAt.toDate();
-        if (expiresAt < new Date()) {
-            return { invite: null, error: 'Invitation expirée.' };
-        }
-
-        // Convert Firestore data to serializable format (Next.js server actions requirement)
-        const serializableInvite = {
-            ...data,
-            createdAt: data.createdAt.toDate().toISOString(),
-            expiresAt: data.expiresAt.toDate().toISOString(),
-        };
-
-        return { invite: serializableInvite, error: null };
+        const res = await fetch(`${API_URL}/api/ai/track-interaction`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, dishName, dishOrigin, dishCategory, eventType })
+        });
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
     } catch (e: any) {
-        console.error(e);
-        return { invite: null, error: 'Une erreur est survenue.' };
+        return { success: false, error: e.message };
     }
 }
 
 export async function explainCalorieGoalAction(
-    input: ExplainCalorieGoalInput
+    input: any
 ): Promise<{ explanation: string | null; error: string | null }> {
-    if (typeof window !== 'undefined') {
-        const { explainCalorieGoalAction } = await import('./actions.native');
-        return explainCalorieGoalAction(input);
-    }
     try {
-        const { explainCalorieGoal } = await import('@/ai/flows/explain-calorie-goal');
-        const result = await explainCalorieGoal(input);
-        return { explanation: result.explanation, error: null };
+        const res = await fetch(`${API_URL}/api/ai/explain-calorie-goal`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
+        });
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
     } catch (e: any) {
-        console.error('Error in explainCalorieGoalAction:', e);
-        return { explanation: null, error: e.message || 'Failed to explain calorie goal.' };
+        return { explanation: null, error: e.message };
     }
 }
 
-export async function reportBugAction(data: {
-    errorCode: string;
-    message: string;
-    stack?: string;
-    userId?: string;
-    path: string;
-}) {
-    if (typeof window !== 'undefined') {
-        const { reportBugAction } = await import('./actions.native');
-        return reportBugAction(data);
-    }
+export async function getRecommendedDishesAction(input: { userId: string; count?: number; timeOfDay?: string }) {
     try {
-        const { getFirestoreInstance } = await import('@/firebase/server-init');
-        const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-        const firestore = await getFirestoreInstance();
-
-        await addDoc(collection(firestore, 'bugs'), {
-            ...data,
-            status: 'new',
-            createdAt: serverTimestamp(),
+        const res = await fetch(`${API_URL}/api/ai/get-recommended-dishes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
         });
-        return { success: true };
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
+    } catch (e: any) {
+        return { recommendations: null, error: e.message };
+    }
+}
+
+export async function generateShoppingListAction(
+    input: any
+): Promise<{ list: any; error: string | null }> {
+    try {
+        const res = await fetch(`${API_URL}/api/ai/generate-shopping-list`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
+        });
+        if (!res.ok) throw new Error('Network error');
+        return await res.json();
+    } catch (e: any) {
+        return { list: null, error: e.message };
+    }
+}
+
+export async function reportBugAction(data: any) {
+    try {
+        const response = await fetch(`${API_URL}/api/bugs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        return await response.json();
     } catch (e) {
-        console.error('Failed to report bug:', e);
+        console.error('Native reportBugAction error:', e);
         return { success: false };
     }
 }

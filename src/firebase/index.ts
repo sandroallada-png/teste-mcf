@@ -1,5 +1,6 @@
 'use client';
 
+import { Capacitor } from '@capacitor/core';
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
@@ -47,7 +48,7 @@ export function getSdks(firebaseApp: FirebaseApp) {
     firebaseApp,
     auth: getAuth(firebaseApp),
     firestore: firestoreInstance,
-    messaging: typeof window !== 'undefined' ? getMessaging(firebaseApp) : null
+    messaging: (typeof window !== 'undefined' && !Capacitor.isNativePlatform()) ? getMessaging(firebaseApp) : null
   };
 }
 

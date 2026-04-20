@@ -27,11 +27,33 @@ import { DexieSyncManager } from '@/lib/dexie/sync';
 import ErrorBoundary from '@/components/shared/error-boundary';
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  // 0. Polyfill Service Worker pour iPhone (empêche les crashs de bibliothèques tierces)
+  if (typeof window !== 'undefined' && Capacitor.isNativePlatform() && !('serviceWorker' in navigator)) {
+    try {
+      Object.defineProperty(navigator, 'serviceWorker', {
+        value: {
+          register: () => Promise.resolve({ active: null, scope: '' }),
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          getRegistrations: () => Promise.resolve([]),
+          getRegistration: () => Promise.resolve(null),
+          ready: new Promise(() => {}),
+        },
+        configurable: true,
+        enumerable: true,
+        writable: true
+      });
+      console.log('[Native] Polyfill Service Worker activé.');
+    } catch (e) {
+      console.warn('[Native] Impossible d\'appliquer le polyfill SW :', e);
+    }
+  }
+
   useNativeBack();
 
   useEffect(() => {
-    // 1. Enregistrement du Super-Service Worker pour le cache local
-    if ('serviceWorker' in navigator) {
+    // 1. Enregistrement du Super-Service Worker pour le cache local (Uniquement sur WEB)
+    if ('serviceWorker' in navigator && !Capacitor.isNativePlatform()) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw-mcf.js').then((reg) => {
           console.log('[SW] Service Worker MCF activé et prêt !', reg.scope);
@@ -63,7 +85,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       }
     };
 
-    requestNativeAccess();
+    // requestNativeAccess(); // Désactivé temporairement pour éviter le crash au démarrage
   }, []);
 
   return (

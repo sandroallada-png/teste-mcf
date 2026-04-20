@@ -1,35 +1,29 @@
 import { CapacitorConfig } from '@capacitor/cli';
-// MCF Super-Hybrid Version: 1.0.4 - 2026-04-15
+// MCF iOS LOCAL BUILD — généré par scripts/prepare-ios.js
+// NE PAS COMMITER CE FICHIER tel quel (il est temporaire)
 
 const config: CapacitorConfig = {
   appId: 'my.cook.flex',
   appName: 'My Cook Flex',
-  webDir: 'out',
+  webDir: 'App/App/public',  // ← Correction du chemin pour le Mac
+  // PAS de server.url → WebView charge les fichiers locaux (out/)
+  // Mais on autorise la communication avec la PWA
   server: {
-    url: 'https://app.mycookflex.com',
-    allowNavigation: ['app.mycookflex.com'],
-    androidScheme: 'https',
-    iosScheme: 'https',
-    cleartext: true
-  },
-  android: {
-    buildOptions: {
-      keystorePath: undefined,
-      keystorePassword: undefined,
-      keystoreAlias: undefined,
-      keystoreAliasPassword: undefined,
-    }
+    allowNavigation: [
+      'app.mycookflex.com',
+      '*.mycookflex.com'
+    ]
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: true,
-      backgroundColor: "#0a0a0a",
-      androidScaleType: "CENTER_CROP",
+      backgroundColor: '#0a0a0a',
+      androidScaleType: 'CENTER_CROP',
       showSpinner: true,
-      androidSpinnerStyle: "large",
-      iosSpinnerStyle: "small",
-      spinnerColor: "#f97316",
+      androidSpinnerStyle: 'large',
+      iosSpinnerStyle: 'small',
+      spinnerColor: '#f97316',
     },
     Keyboard: {
       resize: 'body',
@@ -38,7 +32,7 @@ const config: CapacitorConfig = {
     },
     FirebaseAuthentication: {
       skipNativeAuth: false,
-      providers: ["google.com"],
+      providers: ['google.com'],
     }
   }
 };
